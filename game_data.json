@@ -1,0 +1,39 @@
+{
+  "users": {
+    "60c7bf65-f915-422a-b4c5-64fa3266ef3a": {
+      "id": "60c7bf65-f915-422a-b4c5-64fa3266ef3a",
+      "username": "aa",
+      "password": "$2b$12$Q2WpShgiwbIwnEH8byIr.e6BC5g03v3xa/zVZzC2zqxtnsnoPoKwq",
+      "created_at": "2025-07-18T19:34:59.113724",
+      "mouse_x": 1553,
+      "mouse_y": 7,
+      "is_online": true
+    },
+    "bcb34425-3590-44a3-8f2f-6a3740f19d4b": {
+      "id": "bcb34425-3590-44a3-8f2f-6a3740f19d4b",
+      "username": "n",
+      "password": "$2b$12$heG656fBBaXYBpT9gy6wIervGJ0HdJtam/vSH1e96I8XvX7mSZl1O",
+      "created_at": "2025-07-18T19:35:32.242014",
+      "mouse_x": 576,
+      "mouse_y": 649,
+      "is_online": true
+    }
+  },
+  "tamagotchis": {},
+  "mouse_positions": {
+    "60c7bf65-f915-422a-b4c5-64fa3266ef3a": {
+      "user_id": "60c7bf65-f915-422a-b4c5-64fa3266ef3a",
+      "username": "aa",
+      "x": 1553,
+      "y": 7,
+      "timestamp": "2025-07-18T19:35:41.773994"
+    },
+    "bcb34425-3590-44a3-8f2f-6a3740f19d4b": {
+      "user_id": "bcb34425-3590-44a3-8f2f-6a3740f19d4b",
+      "username": "n",
+      "x": 576,
+      "y": 649,
+      "timestamp": "2025-07-18T19:37:28.756211"
+    }
+  }
+}
