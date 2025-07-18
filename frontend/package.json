@@ -1,0 +1,21 @@
+{
+  "name": "tamagotchi-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "vue": "^3.3.4",
+    "@apollo/client": "^3.8.7",
+    "@vue/apollo-composable": "^4.0.0-beta.11",
+    "graphql": "^16.8.1",
+    "graphql-tag": "^2.12.6"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^5.0.8",
+    "@vue/compiler-sfc": "^3.3.4"
+  }
+}
