@@ -44,14 +44,16 @@ class Mutation:
     
     @strawberry.mutation
     def create_tamagotchi(self, input: CreateTamagotchiInput, info) -> Tamagotchi:
-        user_id = getattr(info.context.get("request", {}), "user_id", None)
+        # Get user_id from context
+        user_id = info.context.get("user_id")
         if not user_id:
             raise Exception("Authentication required")
         return storage.create_tamagotchi(input.name, user_id)
     
     @strawberry.mutation
     def update_mouse_position(self, input: MousePositionInput, info) -> bool:
-        user_id = getattr(info.context.get("request", {}), "user_id", None)
+        # Get user_id from context
+        user_id = info.context.get("user_id")
         if not user_id:
             raise Exception("Authentication required")
         storage.update_mouse_position(user_id, input.x, input.y)

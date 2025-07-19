@@ -472,6 +472,9 @@ export default {
           input: { name: newTamagotchiName.value.trim() },
         });
         newTamagotchiName.value = "";
+        
+        // Manually refetch data to ensure the new Tamagotchi appears
+        await loadGameData();
       } catch (error) {
         console.error("Error creating Tamagotchi:", error);
       }

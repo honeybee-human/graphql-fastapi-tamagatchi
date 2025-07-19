@@ -23,12 +23,59 @@
       "username": "b",
       "password": "$2b$12$k7dKAKSGnKquLZs8MbBkau7sixTUejDanRBpnw2xpiLFGiHeUsEF.",
       "created_at": "2025-07-18T20:05:18.435854",
-      "mouse_x": 0.0,
-      "mouse_y": 0.0,
+      "mouse_x": 0,
+      "mouse_y": 620,
       "is_online": true
     }
   },
-  "tamagotchis": {},
+  "tamagotchis": {
+    "cb064007-c5b6-4621-a258-557da18b09f0": {
+      "id": "cb064007-c5b6-4621-a258-557da18b09f0",
+      "name": "kl",
+      "owner_id": "47db9a50-3033-4943-a88b-a86e4273f469",
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 34,
+      "age": 182,
+      "last_fed": "2025-07-18T20:24:08.297438",
+      "last_played": "2025-07-18T20:24:08.297438",
+      "last_slept": "2025-07-18T20:24:08.297438",
+      "created_at": "2025-07-18T20:24:08.297438",
+      "is_alive": true,
+      "status": "Starving",
+      "position": {
+        "x": 718.683644604561,
+        "y": 6.315562986748026,
+        "direction": 2.231687746349275,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc31"
+    },
+    "462ae37a-b70a-44f8-9f06-8f09e1e5e6e9": {
+      "id": "462ae37a-b70a-44f8-9f06-8f09e1e5e6e9",
+      "name": "cc",
+      "owner_id": "47db9a50-3033-4943-a88b-a86e4273f469",
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 51,
+      "age": 165,
+      "last_fed": "2025-07-18T20:24:25.327318",
+      "last_played": "2025-07-18T20:24:25.327318",
+      "last_slept": "2025-07-18T20:24:25.327318",
+      "created_at": "2025-07-18T20:24:25.327318",
+      "is_alive": true,
+      "status": "Starving",
+      "position": {
+        "x": 138.34028718764574,
+        "y": 132.11899388864728,
+        "direction": 5.470896848678994,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc36"
+    }
+  },
   "mouse_positions": {
     "60c7bf65-f915-422a-b4c5-64fa3266ef3a": {
       "user_id": "60c7bf65-f915-422a-b4c5-64fa3266ef3a",
@@ -43,6 +90,13 @@
       "x": 576,
       "y": 649,
       "timestamp": "2025-07-18T19:37:28.756211"
+    },
+    "47db9a50-3033-4943-a88b-a86e4273f469": {
+      "user_id": "47db9a50-3033-4943-a88b-a86e4273f469",
+      "username": "b",
+      "x": 0,
+      "y": 620,
+      "timestamp": "2025-07-18T20:26:59.099352"
     }
   }
 }
