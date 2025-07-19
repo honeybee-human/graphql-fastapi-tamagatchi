@@ -17,6 +17,15 @@
       "mouse_x": 576,
       "mouse_y": 649,
       "is_online": true
+    },
+    "47db9a50-3033-4943-a88b-a86e4273f469": {
+      "id": "47db9a50-3033-4943-a88b-a86e4273f469",
+      "username": "b",
+      "password": "$2b$12$k7dKAKSGnKquLZs8MbBkau7sixTUejDanRBpnw2xpiLFGiHeUsEF.",
+      "created_at": "2025-07-18T20:05:18.435854",
+      "mouse_x": 0.0,
+      "mouse_y": 0.0,
+      "is_online": true
     }
   },
   "tamagotchis": {},

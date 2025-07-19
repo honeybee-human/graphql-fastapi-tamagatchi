@@ -574,6 +574,8 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 # Serve static files (for Vue.js frontend)
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
+from app.main import app
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
