@@ -82,9 +82,28 @@
           }"
           @click="selectTamagotchi(tamagotchi)"
         >
+          <!-- Stats above the icon -->
+          <div class="sprite-stats">
+            <div class="mini-stat">❤️{{ tamagotchi.happiness }}</div>
+            <div class="mini-stat">🍎{{ tamagotchi.hunger }}</div>
+            <div class="mini-stat">⚡{{ tamagotchi.energy }}</div>
+            <div class="mini-stat">💚{{ tamagotchi.health }}</div>
+          </div>
+          
+          <!-- Main sprite -->
           <div class="sprite-emoji">{{ tamagotchi.emoji }}</div>
           <div class="sprite-name">{{ tamagotchi.name }}</div>
           <div class="sprite-status">{{ tamagotchi.status }}</div>
+          
+          <!-- Action buttons below (only for owned and alive Tamagotchis) -->
+          <div 
+            v-if="tamagotchi.ownerId === currentUser?.id && tamagotchi.isAlive" 
+            class="sprite-actions"
+          >
+            <button @click.stop="feedTamagotchi(tamagotchi)" class="mini-action-btn">🍎</button>
+            <button @click.stop="playWithTamagotchi(tamagotchi)" class="mini-action-btn">🎮</button>
+            <button @click.stop="sleepTamagotchi(tamagotchi)" class="mini-action-btn">😴</button>
+          </div>
         </div>
       </div>
 
@@ -217,8 +236,8 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useQuery, useMutation } from "@vue/apollo-composable";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
+import { useQuery, useMutation, useSubscription } from "@vue/apollo-composable";
 import gql from "graphql-tag";
 
 // GraphQL queries and mutations
@@ -306,6 +325,39 @@ const CREATE_TAMAGOTCHI = gql`
   }
 `;
 
+const TAMAGOTCHI_UPDATES_SUBSCRIPTION = gql`
+  subscription TamagotchiUpdates {
+    tamagotchiUpdates {
+      type
+      tamagotchi {
+        id
+        name
+        ownerId
+        happiness
+        hunger
+        energy
+        health
+        age
+        isAlive
+        status
+        position {
+          x
+          y
+          direction
+          speed
+        }
+        emoji
+      }
+      positions {
+        id
+        x
+        y
+        direction
+      }
+    }
+  }
+`;
+
 export default {
   name: "App",
   setup() {
@@ -342,6 +394,55 @@ export default {
       useQuery(GET_ALL_TAMAGOTCHIS);
     const { result: usersResult, refetch: refetchUsers } =
       useQuery(GET_ALL_USERS);
+
+    // GraphQL subscriptions
+    const { result: subscriptionResult } = useSubscription(TAMAGOTCHI_UPDATES_SUBSCRIPTION);
+
+    // Watch for subscription updates
+    watch(subscriptionResult, (newResult) => {
+      if (newResult?.tamagotchiUpdates) {
+        const update = newResult.tamagotchiUpdates;
+        
+        switch (update.type) {
+          case "stats_update":
+            if (update.tamagotchi) {
+              const index = allTamagotchis.value.findIndex(
+                (t) => t.id === update.tamagotchi.id
+              );
+              if (index !== -1) {
+                Object.assign(allTamagotchis.value[index], update.tamagotchi);
+              }
+            }
+            break;
+            
+          case "position_update":
+            if (update.positions) {
+              update.positions.forEach((pos) => {
+                const tamagotchi = allTamagotchis.value.find(
+                  (t) => t.id === pos.id
+                );
+                if (tamagotchi && tamagotchi.position) {
+                  tamagotchi.position.x = pos.x;
+                  tamagotchi.position.y = pos.y;
+                  tamagotchi.position.direction = pos.direction;
+                }
+              });
+            }
+            break;
+            
+          case "tamagotchi_created":
+            if (update.tamagotchi) {
+              const exists = allTamagotchis.value.find(
+                (t) => t.id === update.tamagotchi.id
+              );
+              if (!exists) {
+                allTamagotchis.value.push(update.tamagotchi);
+              }
+            }
+            break;
+        }
+      }
+    });
 
     // Authentication methods
     const handleAuth = async () => {
@@ -506,16 +607,19 @@ export default {
     };
 
     // Placeholder action methods (implement with GraphQL mutations)
-    const feedTamagotchi = () => {
-      console.log("Feed tamagotchi:", selectedTamagotchi.value?.id);
+    const feedTamagotchi = (tamagotchi = null) => {
+      const target = tamagotchi || selectedTamagotchi.value;
+      console.log("Feed tamagotchi:", target?.id);
     };
 
-    const playWithTamagotchi = () => {
-      console.log("Play with tamagotchi:", selectedTamagotchi.value?.id);
+    const playWithTamagotchi = (tamagotchi = null) => {
+      const target = tamagotchi || selectedTamagotchi.value;
+      console.log("Play with tamagotchi:", target?.id);
     };
 
-    const sleepTamagotchi = () => {
-      console.log("Sleep tamagotchi:", selectedTamagotchi.value?.id);
+    const sleepTamagotchi = (tamagotchi = null) => {
+      const target = tamagotchi || selectedTamagotchi.value;
+      console.log("Sleep tamagotchi:", target?.id);
     };
 
     // Initialize
@@ -779,6 +883,49 @@ body {
   padding: 1px 4px;
   border-radius: 8px;
   font-size: 10px;
+}
+
+.sprite-stats {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.mini-stat {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 9px;
+}
+
+.sprite-actions {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+}
+
+.mini-action-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mini-action-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
 }
 
 /* Control Panel */

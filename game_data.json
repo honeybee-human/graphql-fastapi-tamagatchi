@@ -23,9 +23,18 @@
       "username": "b",
       "password": "$2b$12$k7dKAKSGnKquLZs8MbBkau7sixTUejDanRBpnw2xpiLFGiHeUsEF.",
       "created_at": "2025-07-18T20:05:18.435854",
-      "mouse_x": 0,
-      "mouse_y": 620,
-      "is_online": true
+      "mouse_x": 255,
+      "mouse_y": 1,
+      "is_online": false
+    },
+    "7db44735-9b7c-4a60-a3ee-41a74f75cf22": {
+      "id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
+      "username": "a",
+      "password": "$2b$12$fWRlo.PpkYX8MAIZtROTU.rKNSJKnSRv5EWxa.efsEEAX.wTA25/S",
+      "created_at": "2025-07-18T20:28:34.793282",
+      "mouse_x": 5,
+      "mouse_y": 587,
+      "is_online": false
     }
   },
   "tamagotchis": {
@@ -36,18 +45,18 @@
       "happiness": 0,
       "hunger": 100,
       "energy": 0,
-      "health": 34,
-      "age": 182,
+      "health": 0,
+      "age": 216,
       "last_fed": "2025-07-18T20:24:08.297438",
       "last_played": "2025-07-18T20:24:08.297438",
       "last_slept": "2025-07-18T20:24:08.297438",
       "created_at": "2025-07-18T20:24:08.297438",
-      "is_alive": true,
-      "status": "Starving",
+      "is_alive": false,
+      "status": "Dead",
       "position": {
-        "x": 718.683644604561,
-        "y": 6.315562986748026,
-        "direction": 2.231687746349275,
+        "x": 485.1340734133372,
+        "y": 214.50090563731177,
+        "direction": 2.5549092146283963,
         "speed": 1.0
       },
       "emoji": "\ud83d\udc31"
@@ -59,18 +68,64 @@
       "happiness": 0,
       "hunger": 100,
       "energy": 0,
-      "health": 51,
-      "age": 165,
+      "health": 0,
+      "age": 217,
       "last_fed": "2025-07-18T20:24:25.327318",
       "last_played": "2025-07-18T20:24:25.327318",
       "last_slept": "2025-07-18T20:24:25.327318",
       "created_at": "2025-07-18T20:24:25.327318",
+      "is_alive": false,
+      "status": "Dead",
+      "position": {
+        "x": 10.927398023364848,
+        "y": 220.81176919764354,
+        "direction": -3.5632274409845284,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc36"
+    },
+    "9048427c-6d24-4f74-a473-ab86762fb2cf": {
+      "id": "9048427c-6d24-4f74-a473-ab86762fb2cf",
+      "name": "ss",
+      "owner_id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 40,
+      "age": 174,
+      "last_fed": "2025-07-18T20:32:55.821807",
+      "last_played": "2025-07-18T20:32:55.821807",
+      "last_slept": "2025-07-18T20:32:55.821807",
+      "created_at": "2025-07-18T20:32:55.821807",
       "is_alive": true,
       "status": "Starving",
       "position": {
-        "x": 138.34028718764574,
-        "y": 132.11899388864728,
-        "direction": 5.470896848678994,
+        "x": 453.36786426284385,
+        "y": 319.44970610616105,
+        "direction": -0.35985591561632024,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc27"
+    },
+    "bcfff5d4-01be-4e8d-b5ea-4a652f1b26fe": {
+      "id": "bcfff5d4-01be-4e8d-b5ea-4a652f1b26fe",
+      "name": "xx",
+      "owner_id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
+      "happiness": 100,
+      "hunger": 0,
+      "energy": 100,
+      "health": 100,
+      "age": 16,
+      "last_fed": "2025-07-18T20:35:33.816319",
+      "last_played": "2025-07-18T20:35:33.816319",
+      "last_slept": "2025-07-18T20:35:33.816319",
+      "created_at": "2025-07-18T20:35:33.816319",
+      "is_alive": true,
+      "status": "Happy",
+      "position": {
+        "x": 672.0046870993733,
+        "y": 245.59763536191747,
+        "direction": 0.7264431939048324,
         "speed": 1.0
       },
       "emoji": "\ud83d\udc36"
@@ -94,9 +149,16 @@
     "47db9a50-3033-4943-a88b-a86e4273f469": {
       "user_id": "47db9a50-3033-4943-a88b-a86e4273f469",
       "username": "b",
-      "x": 0,
-      "y": 620,
-      "timestamp": "2025-07-18T20:26:59.099352"
+      "x": 255,
+      "y": 1,
+      "timestamp": "2025-07-18T20:32:45.369858"
+    },
+    "7db44735-9b7c-4a60-a3ee-41a74f75cf22": {
+      "user_id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
+      "username": "a",
+      "x": 5,
+      "y": 587,
+      "timestamp": "2025-07-18T20:35:44.960366"
     }
   }
 }
