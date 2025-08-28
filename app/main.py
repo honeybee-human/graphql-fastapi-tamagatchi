@@ -22,8 +22,11 @@ storage.set_connection_manager(manager)
 
 import app.graphql.queries as queries_module
 import app.graphql.mutations as mutations_module
+import app.graphql.subscriptions as subscriptions_module
 queries_module.storage = storage
 mutations_module.storage = storage
+subscriptions_module.storage = storage
+subscriptions_module.manager = manager
 
 
 async def get_context(request: Request):

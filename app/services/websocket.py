@@ -1,12 +1,13 @@
 import json
 import uuid
-from typing import Dict
+from typing import Dict, Callable, Any, Coroutine
 from fastapi import WebSocket
 
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.user_connections: Dict[str, str] = {}
+        self.subscription_handlers: Dict[int, Callable[[Dict[str, Any]], Coroutine[Any, Any, None]]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
@@ -21,14 +22,28 @@ class ConnectionManager:
         if user_id in self.user_connections:
             del self.user_connections[user_id]
 
+    def register_subscription_handler(self, subscription_id: int, handler: Callable[[Dict[str, Any]], Coroutine[Any, Any, None]]):
+        self.subscription_handlers[subscription_id] = handler
+
+    def unregister_subscription_handler(self, subscription_id: int):
+        if subscription_id in self.subscription_handlers:
+            del self.subscription_handlers[subscription_id]
+
     async def broadcast(self, message: dict):
+        # First, notify all subscription handlers
+        for handler in self.subscription_handlers.values():
+            try:
+                await handler(message)
+            except Exception as e:
+                print(f"Error in subscription handler: {e}")
+
+        # Then, send to all WebSocket connections
         disconnected = []
         for connection_id, websocket in self.active_connections.items():
             try:
                 await websocket.send_text(json.dumps(message))
             except:
                 disconnected.append(connection_id)
-
 
         for conn_id in disconnected:
             if conn_id in self.active_connections:

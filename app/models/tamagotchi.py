@@ -1,4 +1,5 @@
 import strawberry
+from typing import List, Optional
 
 @strawberry.type
 class Position:
@@ -6,6 +7,13 @@ class Position:
     y: float
     direction: float
     speed: float = 1.0
+
+@strawberry.type
+class PositionUpdate:
+    id: str
+    x: float
+    y: float
+    direction: float
 
 @strawberry.type
 class Tamagotchi:
@@ -25,3 +33,9 @@ class Tamagotchi:
     status: str
     position: Position
     emoji: str
+
+@strawberry.type
+class TamagotchiUpdateType:
+    type: str
+    tamagotchi: Optional[Tamagotchi] = None
+    positions: Optional[List[PositionUpdate]] = None

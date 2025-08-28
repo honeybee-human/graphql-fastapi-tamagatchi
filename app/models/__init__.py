@@ -1,5 +1,5 @@
 from .user import User
-from .tamagotchi import Tamagotchi, Position
+from .tamagotchi import Tamagotchi, Position, PositionUpdate, TamagotchiUpdateType
 from .inputs import (
     CreateUserInput,
     LoginInput,
@@ -13,6 +13,8 @@ __all__ = [
     "User",
     "Tamagotchi",
     "Position",
+    "PositionUpdate",
+    "TamagotchiUpdateType",
     "CreateUserInput",
     "LoginInput",
     "CreateTamagotchiInput",

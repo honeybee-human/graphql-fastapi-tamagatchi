@@ -293,3 +293,8 @@ class GameStorage:
                         'type': 'position_update',
                         'positions': updated_positions
                     })
+
+    async def get_tamagotchi_by_id(self, tamagotchi_id: str) -> Optional[Tamagotchi]:
+        if tamagotchi_id in self.tamagotchis:
+            return self._dict_to_tamagotchi(self.tamagotchis[tamagotchi_id])
+        return None
