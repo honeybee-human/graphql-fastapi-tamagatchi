@@ -1,164 +1,79 @@
 {
   "users": {
-    "60c7bf65-f915-422a-b4c5-64fa3266ef3a": {
-      "id": "60c7bf65-f915-422a-b4c5-64fa3266ef3a",
-      "username": "aa",
-      "password": "$2b$12$Q2WpShgiwbIwnEH8byIr.e6BC5g03v3xa/zVZzC2zqxtnsnoPoKwq",
-      "created_at": "2025-07-18T19:34:59.113724",
-      "mouse_x": 1553,
-      "mouse_y": 7,
-      "is_online": true
-    },
-    "bcb34425-3590-44a3-8f2f-6a3740f19d4b": {
-      "id": "bcb34425-3590-44a3-8f2f-6a3740f19d4b",
-      "username": "n",
-      "password": "$2b$12$heG656fBBaXYBpT9gy6wIervGJ0HdJtam/vSH1e96I8XvX7mSZl1O",
-      "created_at": "2025-07-18T19:35:32.242014",
-      "mouse_x": 576,
-      "mouse_y": 649,
-      "is_online": true
-    },
-    "47db9a50-3033-4943-a88b-a86e4273f469": {
-      "id": "47db9a50-3033-4943-a88b-a86e4273f469",
-      "username": "b",
-      "password": "$2b$12$k7dKAKSGnKquLZs8MbBkau7sixTUejDanRBpnw2xpiLFGiHeUsEF.",
-      "created_at": "2025-07-18T20:05:18.435854",
-      "mouse_x": 255,
-      "mouse_y": 1,
+    "b7b7fc1d-87f3-4c67-9a55-b83443daeee1": {
+      "id": "b7b7fc1d-87f3-4c67-9a55-b83443daeee1",
+      "username": "secondplayer",
+      "password": "$2b$12$UxiPx.InxGdRgivu7kZEauAn9yWIygXEH9q5GKZsY9qTSj1itNisu",
+      "created_at": "2025-07-18T22:20:01.205662",
+      "mouse_x": 94,
+      "mouse_y": 715,
       "is_online": false
     },
-    "7db44735-9b7c-4a60-a3ee-41a74f75cf22": {
-      "id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
-      "username": "a",
-      "password": "$2b$12$fWRlo.PpkYX8MAIZtROTU.rKNSJKnSRv5EWxa.efsEEAX.wTA25/S",
-      "created_at": "2025-07-18T20:28:34.793282",
-      "mouse_x": 5,
-      "mouse_y": 587,
+    "1f58c207-2f93-44ee-9a0a-4f471c3361a7": {
+      "id": "1f58c207-2f93-44ee-9a0a-4f471c3361a7",
+      "username": "CreampuffStoreOwner",
+      "password": "$2b$12$F02mtzzpKGoQ2b.A.twNXu.7Y2IbYR3YQ1D2G.yfRDAHXqFfDJE7G",
+      "created_at": "2025-08-28T13:25:27.615506",
+      "mouse_x": 0.0,
+      "mouse_y": 0.0,
       "is_online": false
     }
   },
   "tamagotchis": {
-    "cb064007-c5b6-4621-a258-557da18b09f0": {
-      "id": "cb064007-c5b6-4621-a258-557da18b09f0",
-      "name": "kl",
-      "owner_id": "47db9a50-3033-4943-a88b-a86e4273f469",
+    "921a5811-3d78-4fde-ab27-4969ae9f0540": {
+      "id": "921a5811-3d78-4fde-ab27-4969ae9f0540",
+      "name": "MyFirstTamagotchi",
+      "owner_id": "54049644-3ec9-4f90-b2da-86e251da4181",
       "happiness": 0,
       "hunger": 100,
       "energy": 0,
       "health": 0,
-      "age": 216,
-      "last_fed": "2025-07-18T20:24:08.297438",
-      "last_played": "2025-07-18T20:24:08.297438",
-      "last_slept": "2025-07-18T20:24:08.297438",
-      "created_at": "2025-07-18T20:24:08.297438",
+      "age": 211,
+      "last_fed": "2025-07-18T22:19:29.425982",
+      "last_played": "2025-07-18T22:19:29.425982",
+      "last_slept": "2025-07-18T22:19:29.425982",
+      "created_at": "2025-07-18T22:19:29.425982",
       "is_alive": false,
       "status": "Dead",
       "position": {
-        "x": 485.1340734133372,
-        "y": 214.50090563731177,
-        "direction": 2.5549092146283963,
-        "speed": 1.0
-      },
-      "emoji": "\ud83d\udc31"
-    },
-    "462ae37a-b70a-44f8-9f06-8f09e1e5e6e9": {
-      "id": "462ae37a-b70a-44f8-9f06-8f09e1e5e6e9",
-      "name": "cc",
-      "owner_id": "47db9a50-3033-4943-a88b-a86e4273f469",
-      "happiness": 0,
-      "hunger": 100,
-      "energy": 0,
-      "health": 0,
-      "age": 217,
-      "last_fed": "2025-07-18T20:24:25.327318",
-      "last_played": "2025-07-18T20:24:25.327318",
-      "last_slept": "2025-07-18T20:24:25.327318",
-      "created_at": "2025-07-18T20:24:25.327318",
-      "is_alive": false,
-      "status": "Dead",
-      "position": {
-        "x": 10.927398023364848,
-        "y": 220.81176919764354,
-        "direction": -3.5632274409845284,
+        "x": 439.8177857369683,
+        "y": 292.84700708853546,
+        "direction": -0.37564247212427027,
         "speed": 1.0
       },
       "emoji": "\ud83d\udc36"
     },
-    "9048427c-6d24-4f74-a473-ab86762fb2cf": {
-      "id": "9048427c-6d24-4f74-a473-ab86762fb2cf",
-      "name": "ss",
-      "owner_id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
-      "happiness": 0,
-      "hunger": 100,
-      "energy": 0,
-      "health": 40,
-      "age": 174,
-      "last_fed": "2025-07-18T20:32:55.821807",
-      "last_played": "2025-07-18T20:32:55.821807",
-      "last_slept": "2025-07-18T20:32:55.821807",
-      "created_at": "2025-07-18T20:32:55.821807",
-      "is_alive": true,
-      "status": "Starving",
-      "position": {
-        "x": 453.36786426284385,
-        "y": 319.44970610616105,
-        "direction": -0.35985591561632024,
-        "speed": 1.0
-      },
-      "emoji": "\ud83d\udc27"
-    },
-    "bcfff5d4-01be-4e8d-b5ea-4a652f1b26fe": {
-      "id": "bcfff5d4-01be-4e8d-b5ea-4a652f1b26fe",
-      "name": "xx",
-      "owner_id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
-      "happiness": 100,
-      "hunger": 0,
-      "energy": 100,
+    "1ffc453f-bc8f-4c99-9f7e-8a472270af8c": {
+      "id": "1ffc453f-bc8f-4c99-9f7e-8a472270af8c",
+      "name": "cf",
+      "owner_id": "1f58c207-2f93-44ee-9a0a-4f471c3361a7",
+      "happiness": 97,
+      "hunger": 33,
+      "energy": 82,
       "health": 100,
-      "age": 16,
-      "last_fed": "2025-07-18T20:35:33.816319",
-      "last_played": "2025-07-18T20:35:33.816319",
-      "last_slept": "2025-07-18T20:35:33.816319",
-      "created_at": "2025-07-18T20:35:33.816319",
+      "age": 62,
+      "last_fed": "2025-08-28T13:25:41.759941",
+      "last_played": "2025-08-28T13:25:41.759941",
+      "last_slept": "2025-08-28T13:25:41.759941",
+      "created_at": "2025-08-28T13:25:41.759941",
       "is_alive": true,
       "status": "Happy",
       "position": {
-        "x": 672.0046870993733,
-        "y": 245.59763536191747,
-        "direction": 0.7264431939048324,
+        "x": 387.43966996843915,
+        "y": 152.81488396261622,
+        "direction": 0.21417117042575362,
         "speed": 1.0
       },
-      "emoji": "\ud83d\udc36"
+      "emoji": "\ud83e\udd8a"
     }
   },
   "mouse_positions": {
-    "60c7bf65-f915-422a-b4c5-64fa3266ef3a": {
-      "user_id": "60c7bf65-f915-422a-b4c5-64fa3266ef3a",
-      "username": "aa",
-      "x": 1553,
-      "y": 7,
-      "timestamp": "2025-07-18T19:35:41.773994"
-    },
-    "bcb34425-3590-44a3-8f2f-6a3740f19d4b": {
-      "user_id": "bcb34425-3590-44a3-8f2f-6a3740f19d4b",
-      "username": "n",
-      "x": 576,
-      "y": 649,
-      "timestamp": "2025-07-18T19:37:28.756211"
-    },
-    "47db9a50-3033-4943-a88b-a86e4273f469": {
-      "user_id": "47db9a50-3033-4943-a88b-a86e4273f469",
-      "username": "b",
-      "x": 255,
-      "y": 1,
-      "timestamp": "2025-07-18T20:32:45.369858"
-    },
-    "7db44735-9b7c-4a60-a3ee-41a74f75cf22": {
-      "user_id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
-      "username": "a",
-      "x": 5,
-      "y": 587,
-      "timestamp": "2025-07-18T20:35:44.960366"
+    "b7b7fc1d-87f3-4c67-9a55-b83443daeee1": {
+      "user_id": "b7b7fc1d-87f3-4c67-9a55-b83443daeee1",
+      "username": "secondplayer",
+      "x": 94,
+      "y": 715,
+      "timestamp": "2025-07-18T22:26:41.288837"
     }
   }
 }
