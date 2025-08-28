@@ -4,7 +4,7 @@ import strawberry
 class Position:
     x: float
     y: float
-    direction: float  # angle in radians
+    direction: float
     speed: float = 1.0
 
 @strawberry.type

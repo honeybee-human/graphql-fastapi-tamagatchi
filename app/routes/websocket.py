@@ -8,17 +8,17 @@ def setup_websocket_routes(app: FastAPI, storage: GameStorage, manager: Connecti
     @app.websocket("/ws/{user_id}")
     async def websocket_endpoint(websocket: WebSocket, user_id: str):
         connection_id = await manager.connect(websocket, user_id)
-        
-        # Set user as online
+
+
         if user_id in storage.users:
             storage.users[user_id]['is_online'] = True
             storage.save_data()
-        
+
         try:
             while True:
                 data = await websocket.receive_text()
                 message = json.loads(data)
-                
+
                 if message['type'] == 'mouse_position':
                     storage.update_mouse_position(
                         user_id, 
@@ -27,8 +27,8 @@ def setup_websocket_routes(app: FastAPI, storage: GameStorage, manager: Connecti
                     )
         except WebSocketDisconnect:
             manager.disconnect(connection_id, user_id)
-            
-            # Set user as offline
+
+
             if user_id in storage.users:
                 storage.users[user_id]['is_online'] = False
                 storage.save_data()
