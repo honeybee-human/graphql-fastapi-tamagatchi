@@ -35,6 +35,15 @@
       "mouse_x": 5,
       "mouse_y": 587,
       "is_online": false
+    },
+    "9ce450cd-222f-4974-9348-48b280232aac": {
+      "id": "9ce450cd-222f-4974-9348-48b280232aac",
+      "username": "swedf",
+      "password": "$pbkdf2-sha256$29000$3luLkTLGuLfWWmvtvZfyXg$sI.KAA5e324MvSoBuLvnlQZnV5EFWj8i01T0EFzQo2M",
+      "created_at": "2025-10-13T18:39:40.732775",
+      "mouse_x": 278,
+      "mouse_y": 301,
+      "is_online": true
     }
   },
   "tamagotchis": {
@@ -91,18 +100,18 @@
       "happiness": 0,
       "hunger": 100,
       "energy": 0,
-      "health": 40,
-      "age": 174,
+      "health": 0,
+      "age": 7509819,
       "last_fed": "2025-07-18T20:32:55.821807",
       "last_played": "2025-07-18T20:32:55.821807",
       "last_slept": "2025-07-18T20:32:55.821807",
       "created_at": "2025-07-18T20:32:55.821807",
-      "is_alive": true,
-      "status": "Starving",
+      "is_alive": false,
+      "status": "Dead",
       "position": {
-        "x": 453.36786426284385,
-        "y": 319.44970610616105,
-        "direction": -0.35985591561632024,
+        "x": 783.0191982216929,
+        "y": 277.1365276781404,
+        "direction": 3.094063298907239,
         "speed": 1.0
       },
       "emoji": "\ud83d\udc27"
@@ -111,24 +120,93 @@
       "id": "bcfff5d4-01be-4e8d-b5ea-4a652f1b26fe",
       "name": "xx",
       "owner_id": "7db44735-9b7c-4a60-a3ee-41a74f75cf22",
-      "happiness": 100,
-      "hunger": 0,
-      "energy": 100,
-      "health": 100,
-      "age": 16,
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 0,
+      "age": 7509803,
       "last_fed": "2025-07-18T20:35:33.816319",
       "last_played": "2025-07-18T20:35:33.816319",
       "last_slept": "2025-07-18T20:35:33.816319",
       "created_at": "2025-07-18T20:35:33.816319",
-      "is_alive": true,
-      "status": "Happy",
+      "is_alive": false,
+      "status": "Dead",
       "position": {
-        "x": 672.0046870993733,
-        "y": 245.59763536191747,
-        "direction": 0.7264431939048324,
+        "x": 385.75554469024286,
+        "y": 579.8667716935405,
+        "direction": -2.075417372570635,
         "speed": 1.0
       },
       "emoji": "\ud83d\udc36"
+    },
+    "ba94c4f6-ace8-4790-ac8d-52665ac54522": {
+      "id": "ba94c4f6-ace8-4790-ac8d-52665ac54522",
+      "name": "sedfsfde",
+      "owner_id": "9ce450cd-222f-4974-9348-48b280232aac",
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 0,
+      "age": 319,
+      "last_fed": "2025-10-13T18:39:46.374906",
+      "last_played": "2025-10-13T18:39:46.374906",
+      "last_slept": "2025-10-13T18:39:46.374906",
+      "created_at": "2025-10-13T18:39:46.374906",
+      "is_alive": false,
+      "status": "Dead",
+      "position": {
+        "x": 616.9539937644635,
+        "y": 513.5467686381415,
+        "direction": 8.436569070338802,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc36"
+    },
+    "ff04377a-a5a8-4727-b2ad-06cd19381bbc": {
+      "id": "ff04377a-a5a8-4727-b2ad-06cd19381bbc",
+      "name": "sdfs",
+      "owner_id": "9ce450cd-222f-4974-9348-48b280232aac",
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 0,
+      "age": 217,
+      "last_fed": "2025-10-13T18:47:31.477349",
+      "last_played": "2025-10-13T18:47:31.477349",
+      "last_slept": "2025-10-13T18:47:31.477349",
+      "created_at": "2025-10-13T18:47:31.477349",
+      "is_alive": false,
+      "status": "Dead",
+      "position": {
+        "x": 551.811989139522,
+        "y": 181.14416069712868,
+        "direction": -6.836700393435441,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc38"
+    },
+    "db861829-7ea9-4333-baf8-8f806b4fcd0f": {
+      "id": "db861829-7ea9-4333-baf8-8f806b4fcd0f",
+      "name": "asd",
+      "owner_id": "9ce450cd-222f-4974-9348-48b280232aac",
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 0,
+      "age": 212,
+      "last_fed": "2025-10-13T18:53:12.733023",
+      "last_played": "2025-10-13T18:53:12.733023",
+      "last_slept": "2025-10-13T18:53:12.733023",
+      "created_at": "2025-10-13T18:53:12.733023",
+      "is_alive": false,
+      "status": "Dead",
+      "position": {
+        "x": 448.95067414465944,
+        "y": 276.3584691417889,
+        "direction": -5.020029355308127,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc27"
     }
   },
   "mouse_positions": {
@@ -159,6 +237,13 @@
       "x": 5,
       "y": 587,
       "timestamp": "2025-07-18T20:35:44.960366"
+    },
+    "9ce450cd-222f-4974-9348-48b280232aac": {
+      "user_id": "9ce450cd-222f-4974-9348-48b280232aac",
+      "username": "swedf",
+      "x": 278,
+      "y": 301,
+      "timestamp": "2025-10-13T18:53:15.381561"
     }
   }
 }

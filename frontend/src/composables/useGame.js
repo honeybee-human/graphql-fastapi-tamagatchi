@@ -25,15 +25,30 @@ export function useGame() {
       switch (update.type) {
         case 'stats_update':
           if (update.tamagotchi) {
-            const idx = allTamagotchis.value.findIndex((t) => t.id === update.tamagotchi.id);
-            if (idx !== -1) Object.assign(allTamagotchis.value[idx], update.tamagotchi);
+            const u = update.tamagotchi;
+            allTamagotchis.value = allTamagotchis.value.map((t) =>
+              t.id === u.id
+                ? {
+                    ...t,
+                    ...u,
+                    position: u.position
+                      ? { ...u.position }
+                      : t.position
+                      ? { ...t.position }
+                      : undefined,
+                  }
+                : t
+            );
           }
           break;
         case 'position_update':
           if (update.positions) {
-            update.positions.forEach((pos) => {
-              const t = allTamagotchis.value.find((s) => s.id === pos.id);
-              if (t && t.position) { t.position.x = pos.x; t.position.y = pos.y; t.position.direction = pos.direction; }
+            const posById = new Map(update.positions.map((p) => [p.id, p]));
+            allTamagotchis.value = allTamagotchis.value.map((t) => {
+              const p = posById.get(t.id);
+              if (!p) return t;
+              const prev = t.position || {};
+              return { ...t, position: { ...prev, x: p.x, y: p.y, direction: p.direction } };
             });
           }
           break;

@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, Response
 from strawberry.fastapi import GraphQLRouter
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 from jose import JWTError, jwt
@@ -76,8 +77,28 @@ app.include_router(graphql_app, prefix="/graphql")
 # Setup WebSocket routes
 setup_websocket_routes(app, storage, manager)
 
-# Serve static files (for Vue.js frontend)
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+import os
+dist_root = os.path.join("frontend", "dist")
+assets_dir = os.path.join(dist_root, "assets")
+
+# Mount static only if built assets exist
+if os.path.isdir(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+# SPA fallback routes: serve index if present, else 404
+index_html = os.path.join(dist_root, "index.html")
+
+@app.get("/")
+async def serve_index_root():
+    if os.path.isfile(index_html):
+        return FileResponse(index_html)
+    return Response(content="Frontend not built", status_code=404)
+
+@app.get("/{full_path:path}")
+async def serve_index(full_path: str):
+    if os.path.isfile(index_html):
+        return FileResponse(index_html)
+    return Response(content="Frontend not built", status_code=404)
 
 if __name__ == "__main__":
     import uvicorn

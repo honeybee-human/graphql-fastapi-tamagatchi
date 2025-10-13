@@ -23,7 +23,8 @@ class ConnectionManager:
     
     async def broadcast(self, message: dict):
         disconnected = []
-        for connection_id, websocket in self.active_connections.items():
+        # Iterate over a snapshot to avoid mutation during iteration
+        for connection_id, websocket in list(self.active_connections.items()):
             try:
                 await websocket.send_text(json.dumps(message))
             except:

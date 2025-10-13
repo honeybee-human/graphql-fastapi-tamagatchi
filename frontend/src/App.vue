@@ -409,26 +409,35 @@ export default {
         switch (update.type) {
           case "stats_update":
             if (update.tamagotchi) {
-              const index = allTamagotchis.value.findIndex(
-                (t) => t.id === update.tamagotchi.id
+              const u = update.tamagotchi;
+              allTamagotchis.value = allTamagotchis.value.map((t) =>
+                t.id === u.id
+                  ? {
+                      ...t,
+                      ...u,
+                      // clone nested position to avoid mutating frozen objects later
+                      position: u.position
+                        ? { ...u.position }
+                        : t.position
+                        ? { ...t.position }
+                        : undefined,
+                    }
+                  : t
               );
-              if (index !== -1) {
-                Object.assign(allTamagotchis.value[index], update.tamagotchi);
-              }
             }
             break;
             
           case "position_update":
             if (update.positions) {
-              update.positions.forEach((pos) => {
-                const tamagotchi = allTamagotchis.value.find(
-                  (t) => t.id === pos.id
-                );
-                if (tamagotchi && tamagotchi.position) {
-                  tamagotchi.position.x = pos.x;
-                  tamagotchi.position.y = pos.y;
-                  tamagotchi.position.direction = pos.direction;
-                }
+              const posById = new Map(update.positions.map((p) => [p.id, p]));
+              allTamagotchis.value = allTamagotchis.value.map((t) => {
+                const p = posById.get(t.id);
+                if (!p) return t;
+                const prev = t.position || {};
+                return {
+                  ...t,
+                  position: { ...prev, x: p.x, y: p.y, direction: p.direction },
+                };
               });
             }
             break;
@@ -439,7 +448,12 @@ export default {
                 (t) => t.id === update.tamagotchi.id
               );
               if (!exists) {
-                allTamagotchis.value.push(update.tamagotchi);
+                // store a cloned object to avoid carrying frozen nested structures
+                const newT = update.tamagotchi;
+                allTamagotchis.value.push({
+                  ...newT,
+                  position: newT.position ? { ...newT.position } : undefined,
+                });
               }
             }
             break;
@@ -515,27 +529,34 @@ export default {
           break;
 
         case "stats_update":
-          message.tamagotchis.forEach((updatedTama) => {
-            const index = allTamagotchis.value.findIndex(
-              (t) => t.id === updatedTama.id
-            );
-            if (index !== -1) {
-              Object.assign(allTamagotchis.value[index], updatedTama);
-            }
-          });
+          if (Array.isArray(message.tamagotchis)) {
+            const map = new Map(message.tamagotchis.map((u) => [u.id, u]));
+            allTamagotchis.value = allTamagotchis.value.map((t) => {
+              const u = map.get(t.id);
+              if (!u) return t;
+              return {
+                ...t,
+                ...u,
+                position: u.position
+                  ? { ...u.position }
+                  : t.position
+                  ? { ...t.position }
+                  : undefined,
+              };
+            });
+          }
           break;
 
         case "position_update":
-          message.positions.forEach((pos) => {
-            const tamagotchi = allTamagotchis.value.find(
-              (t) => t.id === pos.id
-            );
-            if (tamagotchi) {
-              tamagotchi.position.x = pos.x;
-              tamagotchi.position.y = pos.y;
-              tamagotchi.position.direction = pos.direction;
-            }
-          });
+          if (Array.isArray(message.positions)) {
+            const posById = new Map(message.positions.map((p) => [p.id, p]));
+            allTamagotchis.value = allTamagotchis.value.map((t) => {
+              const p = posById.get(t.id);
+              if (!p) return t;
+              const prev = t.position || {};
+              return { ...t, position: { ...prev, x: p.x, y: p.y, direction: p.direction } };
+            });
+          }
           break;
 
         case "mouse_position":
