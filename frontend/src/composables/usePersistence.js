@@ -10,6 +10,7 @@ export function useDebouncedPersistence(allTamagotchis, positionsById, delayMs =
   const saveAllLocations = async () => {
     try {
       for (const t of allTamagotchis.value || []) {
+        if (!t.isAlive) continue;
         const pos = positionsById.value?.[t.id];
         if (pos) await updateLocation({ id: t.id, x: pos.x, y: pos.y });
       }

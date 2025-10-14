@@ -4,15 +4,16 @@ module.exports = {
   devServer: {
     port: 3000,
     proxy: {
+      // Allow overriding backend target for Docker compose via env
       '/graphql': {
-        target: 'http://localhost:8000',
-        changeOrigin: true
+        target: process.env.BACKEND_URL || 'http://localhost:8000',
+        changeOrigin: true,
       },
       '/ws': {
-        target: 'http://localhost:8000',
+        target: process.env.BACKEND_URL || 'http://localhost:8000',
         ws: true,
-        changeOrigin: true
-      }
-    }
-  }
+        changeOrigin: true,
+      },
+    },
+  },
 }

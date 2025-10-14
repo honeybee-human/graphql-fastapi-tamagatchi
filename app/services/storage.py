@@ -178,6 +178,43 @@ class GameStorage:
                     'type': 'mouse_position',
                     'data': mouse_data
                 }))
+
+    def update_tamagotchi_location(self, tamagotchi_id: str, x: float, y: float) -> Optional[Tamagotchi]:
+        """Update a single Tamagotchi's position and broadcast the change."""
+        data = self.tamagotchis.get(tamagotchi_id)
+        if not data:
+            return None
+
+        # Clamp within game area bounds
+        x = max(0, min(GAME_AREA_WIDTH, x))
+        y = max(0, min(GAME_AREA_HEIGHT, y))
+
+        pos = data.get('position', {})
+        pos['x'] = x
+        pos['y'] = y
+        # Ensure position exists with defaults
+        if 'direction' not in pos:
+            pos['direction'] = 0.0
+        if 'speed' not in pos:
+            pos['speed'] = 1.0
+        data['position'] = pos
+
+        self.tamagotchis[tamagotchi_id] = data
+        self.save_data()
+
+        # Broadcast single position update so other clients can reflect it quickly
+        if self.manager:
+            asyncio.create_task(self.manager.broadcast({
+                'type': 'position_update',
+                'positions': [{
+                    'id': tamagotchi_id,
+                    'x': x,
+                    'y': y,
+                    'direction': pos['direction']
+                }]
+            }))
+
+        return self._dict_to_tamagotchi(data)
     
     async def update_stats_loop(self):
         while True:

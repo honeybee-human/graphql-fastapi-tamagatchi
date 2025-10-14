@@ -6,6 +6,9 @@ export function useTamagotchiMovement(tamagotchisRef) {
   let rafId = null;
 
   const setTargetPosition = (id, evtOrPos) => {
+    const list = tamagotchisRef?.value || [];
+    const t = list.find((x) => x.id === id);
+    if (!t || !t.isAlive) return;
     const pos = evtOrPos?.clientX !== undefined
       ? { x: evtOrPos.clientX, y: evtOrPos.clientY }
       : evtOrPos;
@@ -14,21 +17,29 @@ export function useTamagotchiMovement(tamagotchisRef) {
 
   const step = () => {
     const speed = 3; // px per frame
-    const positions = positionsById.value;
+    const currentPositions = positionsById.value;
     const targets = targetsById.value;
+    const nextPositions = { ...currentPositions };
+    const list = tamagotchisRef?.value || [];
     for (const id in targets) {
+      const tinfo = list.find((x) => x.id === id);
+      if (!tinfo || !tinfo.isAlive) {
+        delete targets[id];
+        continue;
+      }
       const t = targets[id];
-      const p = positions[id] || { x: 0, y: 0 };
+      const p = currentPositions[id] || { x: 0, y: 0 };
       const dx = t.x - p.x;
       const dy = t.y - p.y;
       const dist = Math.hypot(dx, dy);
       if (dist < speed) {
-        positions[id] = { x: t.x, y: t.y };
+        nextPositions[id] = { x: t.x, y: t.y };
         delete targets[id];
       } else {
-        positions[id] = { x: p.x + (dx / dist) * speed, y: p.y + (dy / dist) * speed };
+        nextPositions[id] = { x: p.x + (dx / dist) * speed, y: p.y + (dy / dist) * speed };
       }
     }
+    positionsById.value = nextPositions;
     rafId = requestAnimationFrame(step);
   };
 
@@ -42,5 +53,6 @@ export function useTamagotchiMovement(tamagotchisRef) {
 
   onBeforeUnmount(stopTracking);
 
-  return { positionsById, setTargetPosition, startTracking, stopTracking };
+  const hasTarget = (id) => !!targetsById.value[id];
+  return { positionsById, setTargetPosition, startTracking, stopTracking, hasTarget };
 }

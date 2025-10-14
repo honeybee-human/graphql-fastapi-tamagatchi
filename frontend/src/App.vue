@@ -49,6 +49,7 @@
       <div class="header">
         <h1>🐾 Multiplayer Tamagotchi 🐾</h1>
         <div class="user-info">
+          <button class="online-modal-btn" @click="showOnlineModal = true">👥 Online</button>
           <span>Welcome, {{ currentUser?.username }}!</span>
           <button @click="logout" class="logout-btn">Logout</button>
         </div>
@@ -69,7 +70,7 @@
 
         <!-- Tamagotchis -->
         <div
-          v-for="tamagotchi in allTamagotchis"
+          v-for="tamagotchi in visibleTamagotchis"
           :key="tamagotchi.id"
           class="tamagotchi-sprite"
           :class="{
@@ -79,7 +80,7 @@
           :style="positionsById[tamagotchi.id] && {
             transform: `translate(${positionsById[tamagotchi.id].x}px, ${positionsById[tamagotchi.id].y}px)`
           }"
-          @click="setTargetPosition(tamagotchi.id, $event)"
+          @click="onSpriteClick(tamagotchi.id, $event)"
         >
           <!-- Stats above the icon -->
           <div class="sprite-stats">
@@ -123,6 +124,19 @@
             >
               Create
             </button>
+          </div>
+          <div class="previous-names">
+            <h4>Previous Pets</h4>
+            <div class="names-list">
+              <button
+                v-for="t in myTamagotchis"
+                :key="t.id"
+                class="name-item"
+                @click="selectTamagotchi(t)"
+              >
+                {{ t.name }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -226,6 +240,30 @@
               <span v-if="user.id === currentUser?.id" class="you-badge"
                 >YOU</span
               >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Online Users Modal -->
+      <div v-if="showOnlineModal" class="modal-overlay" @click.self="showOnlineModal = false">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Online Users</h3>
+            <button class="close-btn" @click="showOnlineModal = false">✖</button>
+          </div>
+          <div class="modal-body">
+            <div class="filter-row">
+              <label><input type="checkbox" v-model="showDeadPets" /> Show dead pets</label>
+            </div>
+            <div class="user-toggle-list">
+              <div v-for="user in onlineUsers" :key="user.id" class="toggle-item">
+                <label>
+                  <input type="checkbox" :value="user.id" v-model="selectedUserIds" />
+                  {{ user.username }}
+                  <span v-if="user.id === currentUser?.id" class="you-badge">(you)</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -372,19 +410,31 @@ export default {
 
     // Game state
     const allTamagotchis = ref([]);
-    const { positionsById, setTargetPosition, startTracking, stopTracking } = useTamagotchiMovement(allTamagotchis);
+    const { positionsById, setTargetPosition, startTracking, stopTracking, hasTarget } = useTamagotchiMovement(allTamagotchis);
     const { saveAllLocations, startAutoSave, stopAutoSave } = useDebouncedPersistence(allTamagotchis, positionsById);
     const allUsers = ref([]);
     const selectedTamagotchi = ref(null);
     const newTamagotchiName = ref("");
     const otherMousePositions = ref([]);
+    const gameArea = ref(null);
+    const showOnlineModal = ref(false);
+    const selectedUserIds = ref([]);
+    const showDeadPets = ref(true);
 
     // WebSocket connection
     const ws = ref(null);
 
     // Computed properties
-    const onlineUsers = computed(() =>
-      allUsers.value.filter((user) => user.isOnline)
+    const onlineUsers = computed(() => allUsers.value.filter((user) => user.isOnline));
+    const myTamagotchis = computed(() => allTamagotchis.value.filter((t) => t.ownerId === currentUser.value?.id));
+    const visibleTamagotchis = computed(() =>
+      allTamagotchis.value.filter((t) => {
+        const ownerSelected = selectedUserIds.value.length === 0
+          ? true
+          : selectedUserIds.value.includes(t.ownerId);
+        const deadOk = showDeadPets.value || t.isAlive;
+        return ownerSelected && deadOk;
+      })
     );
 
     // GraphQL mutations
@@ -507,7 +557,9 @@ export default {
       if (!currentUser.value) return;
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws/${currentUser.value.id}`;
+      // Connect directly to backend to avoid dev proxy issues
+      const backendHost = "127.0.0.1:8000";
+      const wsUrl = `${protocol}//${backendHost}/ws/${currentUser.value.id}`;
 
       ws.value = new WebSocket(wsUrl);
 
@@ -525,7 +577,12 @@ export default {
     const handleWebSocketMessage = (message) => {
       switch (message.type) {
         case "tamagotchi_created":
-          allTamagotchis.value.push(message.tamagotchi);
+          if (message.tamagotchi) {
+            const exists = allTamagotchis.value.some((t) => t.id === message.tamagotchi.id);
+            if (!exists) {
+              allTamagotchis.value = [...allTamagotchis.value, message.tamagotchi];
+            }
+          }
           break;
 
         case "stats_update":
@@ -553,9 +610,20 @@ export default {
             allTamagotchis.value = allTamagotchis.value.map((t) => {
               const p = posById.get(t.id);
               if (!p) return t;
+              if (!t.isAlive) return t;
               const prev = t.position || {};
               return { ...t, position: { ...prev, x: p.x, y: p.y, direction: p.direction } };
             });
+
+            // Drive UI positions for smooth movement (alive only)
+            const next = { ...positionsById.value };
+            for (const [id, p] of posById.entries()) {
+              const tinfo = allTamagotchis.value.find((x) => x.id === id);
+              if (!tinfo || !tinfo.isAlive) continue;
+              if (hasTarget(id)) continue;
+              next[id] = { x: p.x, y: p.y };
+            }
+            positionsById.value = next;
           }
           break;
 
@@ -566,9 +634,11 @@ export default {
             );
 
             if (existingIndex !== -1) {
-              otherMousePositions.value[existingIndex] = message.data;
+              otherMousePositions.value = otherMousePositions.value.map((m, i) =>
+                i === existingIndex ? message.data : m
+              );
             } else {
-              otherMousePositions.value.push(message.data);
+              otherMousePositions.value = [...otherMousePositions.value, message.data];
             }
           }
           break;
@@ -581,11 +651,22 @@ export default {
       await refetchUsers();
 
       if (tamagotchisResult.value?.allTamagotchis) {
-        allTamagotchis.value = tamagotchisResult.value.allTamagotchis;
+        // Clone array and nested positions to avoid mutating Apollo-frozen data
+        allTamagotchis.value = tamagotchisResult.value.allTamagotchis.map((t) => ({
+          ...t,
+          position: t.position ? { ...t.position } : undefined,
+        }));
+        // Seed UI positions
+        const seeded = {};
+        for (const t of allTamagotchis.value) {
+          if (t.position) seeded[t.id] = { x: t.position.x, y: t.position.y };
+        }
+        positionsById.value = seeded;
       }
 
       if (usersResult.value?.allUsers) {
-        allUsers.value = usersResult.value.allUsers;
+        // Clone array to avoid direct mutation of Apollo arrays
+        allUsers.value = [...usersResult.value.allUsers];
       }
     };
 
@@ -607,6 +688,14 @@ export default {
 
     const selectTamagotchi = (tamagotchi) => {
       selectedTamagotchi.value = tamagotchi;
+    };
+
+    const onSpriteClick = (id, event) => {
+      const rect = gameArea.value?.getBoundingClientRect?.();
+      if (!rect) return;
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      setTargetPosition(id, { x, y });
     };
 
     const updateMousePosition = (event) => {
@@ -685,11 +774,16 @@ export default {
 
       // Game state
       allTamagotchis,
+      visibleTamagotchis,
       allUsers,
       selectedTamagotchi,
       newTamagotchiName,
       otherMousePositions,
       onlineUsers,
+      myTamagotchis,
+      showOnlineModal,
+      selectedUserIds,
+      showDeadPets,
 
       // Game methods
       createTamagotchi,
@@ -697,11 +791,13 @@ export default {
       // Movement
       positionsById,
       setTargetPosition,
+      onSpriteClick,
       updateMousePosition,
       getOwnerName,
       feedTamagotchi,
       playWithTamagotchi,
       sleepTamagotchi,
+      gameArea,
     };
   },
 };

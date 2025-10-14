@@ -4,9 +4,9 @@ import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client/core
 import { setContext } from '@apollo/client/link/context'
 import { DefaultApolloClient } from '@vue/apollo-composable'
 
-// HTTP link (proxied via devServer)
+// HTTP link - connect directly to backend in dev
 const httpLink = createHttpLink({
-  uri: '/graphql',
+  uri: 'http://127.0.0.1:8000/graphql',
 })
 
 // Auth link to add JWT token to headers

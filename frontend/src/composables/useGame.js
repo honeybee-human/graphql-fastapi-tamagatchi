@@ -54,7 +54,7 @@ export function useGame() {
           break;
         case 'tamagotchi_created':
           if (update.tamagotchi && !allTamagotchis.value.find((t) => t.id === update.tamagotchi.id)) {
-            allTamagotchis.value.push(update.tamagotchi);
+            allTamagotchis.value = [...allTamagotchis.value, update.tamagotchi];
           }
           break;
       }

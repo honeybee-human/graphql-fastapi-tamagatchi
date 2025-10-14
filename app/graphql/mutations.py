@@ -58,3 +58,24 @@ class Mutation:
             raise Exception("Authentication required")
         storage.update_mouse_position(user_id, input.x, input.y)
         return True
+
+    @strawberry.mutation
+    def update_tamagotchi_location(self, id: str, x: float, y: float, info) -> Tamagotchi:
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+
+        # Ensure tamagotchi exists
+        t_data = storage.tamagotchis.get(id)
+        if not t_data:
+            raise Exception("Tamagotchi not found")
+
+        # Enforce ownership
+        if t_data.get('owner_id') != user_id:
+            raise Exception("Not authorized to update this Tamagotchi")
+
+        updated = storage.update_tamagotchi_location(id, x, y)
+        if not updated:
+            raise Exception("Failed to update location")
+        return updated
