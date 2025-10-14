@@ -49,7 +49,8 @@
       <div class="header">
         <h1>🐾 Multiplayer Tamagotchi 🐾</h1>
         <div class="user-info">
-          <button class="online-modal-btn" @click="showOnlineModal = true">👥 Online</button>
+          <button class="online-modal-btn" ref="onlineBtnRef" @click="openOnlineModal">👥 Online</button>
+          <span class="online-count">{{ onlineUsers.length }} users online</span><span class="online-indicator"></span>
           <span>Welcome, {{ currentUser?.username }}!</span>
           <button @click="logout" class="logout-btn">Logout</button>
         </div>
@@ -93,7 +94,7 @@
           <!-- Main sprite -->
           <div class="sprite-emoji">{{ tamagotchi.emoji }}</div>
           <div class="sprite-name">{{ tamagotchi.name }}</div>
-          <div class="sprite-status">{{ tamagotchi.status }}</div>
+          <div class="sprite-status">{{ displayStatus(tamagotchi.status) }}</div>
           
           <!-- Action buttons below (only for owned and alive Tamagotchis) -->
           <div 
@@ -103,6 +104,21 @@
             <button @click.stop="feedTamagotchi(tamagotchi)" class="mini-action-btn">🍎</button>
             <button @click.stop="playWithTamagotchi(tamagotchi)" class="mini-action-btn">🎮</button>
             <button @click.stop="sleepTamagotchi(tamagotchi)" class="mini-action-btn">😴</button>
+          </div>
+          <!-- Owner actions for knocked out pets -->
+          <div 
+            v-else-if="tamagotchi.ownerId === currentUser?.id && !tamagotchi.isAlive" 
+            class="sprite-actions"
+          >
+            <button @click.stop="reviveTamagotchi(tamagotchi)" class="mini-action-btn">💉 Revive</button>
+            <button @click.stop="releaseTamagotchi(tamagotchi)" class="mini-action-btn">🗑️ Release</button>
+          </div>
+          <!-- Other users' heart support (only for non-owners and alive) -->
+          <div 
+            v-if="tamagotchi.ownerId !== currentUser?.id && tamagotchi.isAlive" 
+            class="sprite-actions"
+          >
+            <button @click.stop="supportTamagotchi(tamagotchi)" class="mini-action-btn">💚</button>
           </div>
         </div>
       </div>
@@ -124,6 +140,9 @@
             >
               Create
             </button>
+          </div>
+          <div class="filter-row">
+            <label class="checkbox-label"><input type="checkbox" v-model="showMyKnockedOut" class="pretty-checkbox" /> <span>show my knocked out pets?</span></label>
           </div>
           <div class="previous-names">
             <h4>Previous Pets</h4>
@@ -223,7 +242,7 @@
           </div>
 
           <div v-else-if="!selectedTamagotchi.isAlive" class="dead-message">
-            💀 This Tamagotchi has died
+            This Tamagotchi is knocked out
           </div>
 
           <div v-else class="not-owner-message">
@@ -247,26 +266,30 @@
 
       <!-- Online Users Modal -->
       <div v-if="showOnlineModal" class="modal-overlay" @click.self="showOnlineModal = false">
-        <div class="modal">
+        <div class="modal anchored" :style="modalStyle">
           <div class="modal-header">
             <h3>Online Users</h3>
             <button class="close-btn" @click="showOnlineModal = false">✖</button>
           </div>
           <div class="modal-body">
             <div class="filter-row">
-              <label><input type="checkbox" v-model="showDeadPets" /> Show dead pets</label>
+              <label class="checkbox-label"><input type="checkbox" v-model="showDeadPets" class="pretty-checkbox" /> <span>show other users' knocked out pets?</span></label>
             </div>
             <div class="user-toggle-list">
-              <div v-for="user in onlineUsers" :key="user.id" class="toggle-item">
-                <label>
-                  <input type="checkbox" :value="user.id" v-model="selectedUserIds" />
-                  {{ user.username }}
-                  <span v-if="user.id === currentUser?.id" class="you-badge">(you)</span>
+              <div v-for="user in onlineOthers" :key="user.id" class="toggle-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" :value="user.id" v-model="selectedUserIds" class="pretty-checkbox" />
+                  <span>{{ user.username }}</span>
                 </label>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Toast notifications -->
+      <div class="toast-container">
+        <div v-for="toast in toasts" :key="toast.id" class="toast" :class="toast.type">{{ toast.message }}</div>
       </div>
     </div>
   </div>
@@ -397,6 +420,40 @@ const TAMAGOTCHI_UPDATES_SUBSCRIPTION = gql`
   }
 `;
 
+const SUPPORT_TAMAGOTCHI = gql`
+  mutation SupportTamagotchi($id: ID!) {
+    supportTamagotchi(id: $id) {
+      id
+      happiness
+      hunger
+      energy
+      health
+      isAlive
+      status
+    }
+  }
+`;
+
+const REVIVE_TAMAGOTCHI = gql`
+  mutation ReviveTamagotchi($id: ID!) {
+    reviveTamagotchi(id: $id) {
+      id
+      happiness
+      hunger
+      energy
+      health
+      isAlive
+      status
+    }
+  }
+`;
+
+const RELEASE_TAMAGOTCHI = gql`
+  mutation ReleaseTamagotchi($id: ID!) {
+    releaseTamagotchi(id: $id)
+  }
+`;
+
 export default {
   name: "App",
   setup() {
@@ -419,21 +476,29 @@ export default {
     const gameArea = ref(null);
     const showOnlineModal = ref(false);
     const selectedUserIds = ref([]);
-    const showDeadPets = ref(true);
+    const showDeadPets = ref(false);
+    const showMyKnockedOut = ref(false);
+    const onlineBtnRef = ref(null);
+    const modalStyle = ref({ position: 'fixed', top: '80px', left: '20px' });
+    const hiddenDeadMineIds = ref(new Set());
+    const toasts = ref([]);
 
     // WebSocket connection
     const ws = ref(null);
 
     // Computed properties
     const onlineUsers = computed(() => allUsers.value.filter((user) => user.isOnline));
+    const onlineOthers = computed(() => onlineUsers.value.filter((u) => u.id !== currentUser.value?.id));
     const myTamagotchis = computed(() => allTamagotchis.value.filter((t) => t.ownerId === currentUser.value?.id));
     const visibleTamagotchis = computed(() =>
       allTamagotchis.value.filter((t) => {
         const ownerSelected = selectedUserIds.value.length === 0
           ? true
           : selectedUserIds.value.includes(t.ownerId);
-        const deadOk = showDeadPets.value || t.isAlive;
-        return ownerSelected && deadOk;
+        const isMine = t.ownerId === currentUser.value?.id;
+        const deadOk = t.isAlive ? true : (isMine ? showMyKnockedOut.value : showDeadPets.value);
+        const hiddenMineDead = isMine && hiddenDeadMineIds.value.has(t.id);
+        return ownerSelected && deadOk && !hiddenMineDead;
       })
     );
 
@@ -450,6 +515,9 @@ export default {
 
     // GraphQL subscriptions
     const { result: subscriptionResult } = useSubscription(TAMAGOTCHI_UPDATES_SUBSCRIPTION);
+    const { mutate: supportMutation } = useMutation(SUPPORT_TAMAGOTCHI);
+    const { mutate: reviveMutation } = useMutation(REVIVE_TAMAGOTCHI);
+    const { mutate: releaseMutation } = useMutation(RELEASE_TAMAGOTCHI);
 
     // Watch for subscription updates
     watch(subscriptionResult, (newResult) => {
@@ -460,6 +528,7 @@ export default {
           case "stats_update":
             if (update.tamagotchi) {
               const u = update.tamagotchi;
+              const prev = allTamagotchis.value.find((t) => t.id === u.id);
               allTamagotchis.value = allTamagotchis.value.map((t) =>
                 t.id === u.id
                   ? {
@@ -474,6 +543,12 @@ export default {
                     }
                   : t
               );
+              if (prev && prev.isAlive && !u.isAlive) {
+                if (prev.ownerId === currentUser.value?.id) {
+                  setTimeout(() => { hiddenDeadMineIds.value.add(prev.id); }, 3000);
+                }
+                pushToast(`your pet ${prev.name} is knocked out!`, 'warning');
+              }
             }
             break;
             
@@ -505,6 +580,14 @@ export default {
                   position: newT.position ? { ...newT.position } : undefined,
                 });
               }
+            }
+            break;
+
+          case "tamagotchi_removed":
+            if (update.id) {
+              const id = update.id;
+              allTamagotchis.value = allTamagotchis.value.filter((t) => t.id !== id);
+              if (selectedTamagotchi.value?.id === id) selectedTamagotchi.value = null;
             }
             break;
         }
@@ -588,6 +671,7 @@ export default {
         case "stats_update":
           if (Array.isArray(message.tamagotchis)) {
             const map = new Map(message.tamagotchis.map((u) => [u.id, u]));
+            const before = new Map(allTamagotchis.value.map((t) => [t.id, t]));
             allTamagotchis.value = allTamagotchis.value.map((t) => {
               const u = map.get(t.id);
               if (!u) return t;
@@ -601,6 +685,40 @@ export default {
                   : undefined,
               };
             });
+            for (const [id, u] of map.entries()) {
+              const prev = before.get(id);
+              if (prev && prev.isAlive && !u.is_alive) {
+                if (prev.ownerId === currentUser.value?.id) {
+                  setTimeout(() => { hiddenDeadMineIds.value.add(prev.id); }, 3000);
+                }
+                pushToast(`your pet ${prev.name} is knocked out!`, 'warning');
+              }
+            }
+          }
+          // Also handle single tamagotchi updates
+          if (message.tamagotchi) {
+            const u = message.tamagotchi;
+            const before = new Map(allTamagotchis.value.map((t) => [t.id, t]));
+            allTamagotchis.value = allTamagotchis.value.map((t) =>
+              t.id === u.id
+                ? {
+                    ...t,
+                    ...u,
+                    position: u.position
+                      ? { ...u.position }
+                      : t.position
+                      ? { ...t.position }
+                      : undefined,
+                  }
+                : t
+            );
+            const prev = before.get(u.id);
+            if (prev && prev.isAlive && !u.is_alive) {
+              if (prev.ownerId === currentUser.value?.id) {
+                setTimeout(() => { hiddenDeadMineIds.value.add(prev.id); }, 3000);
+              }
+              pushToast(`your pet ${prev.name} is knocked out!`, 'warning');
+            }
           }
           break;
 
@@ -640,6 +758,14 @@ export default {
             } else {
               otherMousePositions.value = [...otherMousePositions.value, message.data];
             }
+          }
+          break;
+
+        case "tamagotchi_removed":
+          if (message.id) {
+            const id = message.id;
+            allTamagotchis.value = allTamagotchis.value.filter((t) => t.id !== id);
+            if (selectedTamagotchi.value?.id === id) selectedTamagotchi.value = null;
           }
           break;
       }
@@ -719,6 +845,68 @@ export default {
       return owner ? owner.username : "Unknown";
     };
 
+    const displayStatus = (status) => (status === 'Dead' ? 'Knocked Out' : status);
+
+    const pushToast = (message, type = 'info') => {
+      const id = Math.random().toString(36).slice(2);
+      toasts.value = [...toasts.value, { id, message, type }];
+      setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id); }, 5000);
+    };
+
+    const supportTamagotchi = async (tamagotchi) => {
+      try {
+        await supportMutation({ id: tamagotchi.id });
+        pushToast(`you sent love to ${tamagotchi.name}!`, 'success');
+      } catch (e) {
+        pushToast('failed to support pet', 'error');
+      }
+    };
+
+    const reviveTamagotchi = async (tamagotchi) => {
+      try {
+        const res = await reviveMutation({ id: tamagotchi.id });
+        const u = res?.data?.reviveTamagotchi;
+        if (u) {
+          allTamagotchis.value = allTamagotchis.value.map((t) => (t.id === u.id ? { ...t, ...u } : t));
+          pushToast(`you revived ${tamagotchi.name}!`, 'success');
+        } else {
+          pushToast('failed to revive pet', 'error');
+        }
+      } catch (e) {
+        pushToast('failed to revive pet', 'error');
+      }
+    };
+
+    const releaseTamagotchi = async (tamagotchi) => {
+      try {
+        const res = await releaseMutation({ id: tamagotchi.id });
+        const ok = res?.data?.releaseTamagotchi;
+        if (ok) {
+          allTamagotchis.value = allTamagotchis.value.filter((t) => t.id !== tamagotchi.id);
+          if (selectedTamagotchi.value?.id === tamagotchi.id) selectedTamagotchi.value = null;
+          pushToast(`you released ${tamagotchi.name}.`, 'info');
+        } else {
+          pushToast('failed to release pet', 'error');
+        }
+      } catch (e) {
+        pushToast('failed to release pet', 'error');
+      }
+    };
+
+    const openOnlineModal = () => {
+      if (showOnlineModal.value) {
+        showOnlineModal.value = false;
+        return;
+      }
+      showOnlineModal.value = true;
+      const ids = onlineOthers.value.map((u) => u.id);
+      if (ids.length && selectedUserIds.value.length === 0) selectedUserIds.value = ids;
+      const rect = onlineBtnRef.value?.getBoundingClientRect?.();
+      if (rect) {
+        modalStyle.value = { position: 'fixed', top: `${rect.bottom + 6}px`, left: `${rect.left}px` };
+      }
+    };
+
     // Placeholder action methods (implement with GraphQL mutations)
     const feedTamagotchi = (tamagotchi = null) => {
       const target = tamagotchi || selectedTamagotchi.value;
@@ -780,10 +968,15 @@ export default {
       newTamagotchiName,
       otherMousePositions,
       onlineUsers,
+      onlineOthers,
       myTamagotchis,
       showOnlineModal,
       selectedUserIds,
       showDeadPets,
+      showMyKnockedOut,
+      onlineBtnRef,
+      openOnlineModal,
+      modalStyle,
 
       // Game methods
       createTamagotchi,
@@ -794,10 +987,15 @@ export default {
       onSpriteClick,
       updateMousePosition,
       getOwnerName,
+      displayStatus,
       feedTamagotchi,
       playWithTamagotchi,
       sleepTamagotchi,
+      reviveTamagotchi,
+      releaseTamagotchi,
+      supportTamagotchi,
       gameArea,
+      toasts,
     };
   },
 };
@@ -805,4 +1003,20 @@ export default {
 
 <style lang="scss">
 @use './styles.scss' as *;
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 9998; }
+.modal.anchored { position: fixed; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999; padding: 16px; }
+.online-modal-btn { background: #fff; border: 1px solid #ddd; color: #333; padding: 6px 10px; border-radius: 6px; }
+.close-btn { background: #fff; border: 1px solid #ddd; color: #333; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+.online-count { font-size: 14px; color: #333; }
+.online-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #20bf6b; margin-left: 6px; animation: pulseOpacity 2s ease-in-out infinite alternate; }
+@keyframes pulseOpacity { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+.checkbox-label { display: inline-flex; gap: 8px; align-items: center; }
+.pretty-checkbox { appearance: none; width: 16px; height: 16px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; }
+.pretty-checkbox:hover { border-color: #20bf6b; }
+.pretty-checkbox:checked { background: linear-gradient(45deg, #a8e6cf 0%, #dcedc1 100%); border-color: #20bf6b; }
+.toast-container { position: fixed; top: 12px; right: 12px; display: grid; gap: 8px; z-index: 2000; }
+.toast { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.toast.warning { border-color: #f39c12; }
+.toast.success { border-color: #20bf6b; }
+.toast.error { border-color: #e74c3c; }
 </style>

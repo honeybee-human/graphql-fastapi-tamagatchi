@@ -48,3 +48,17 @@ export const UPDATE_TAMAGOTCHI_LOCATION = gql`
     }
   }
 `;
+
+export const SUPPORT_TAMAGOTCHI = gql`
+  mutation SupportTamagotchi($id: ID!) {
+    supportTamagotchi(id: $id) {
+      id
+      happiness
+      hunger
+      energy
+      health
+      isAlive
+      status
+    }
+  }
+`;

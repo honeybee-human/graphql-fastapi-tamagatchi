@@ -79,3 +79,67 @@ class Mutation:
         if not updated:
             raise Exception("Failed to update location")
         return updated
+
+    @strawberry.mutation
+    def support_tamagotchi(self, id: str, info) -> Tamagotchi:
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+
+        # Ensure tamagotchi exists
+        t_data = storage.tamagotchis.get(id)
+        if not t_data:
+            raise Exception("Tamagotchi not found")
+
+        # Only non-owner can support
+        if t_data.get('owner_id') == user_id:
+            raise Exception("You cannot support your own Tamagotchi")
+
+        updated = storage.support_tamagotchi(user_id, id)
+        if not updated:
+            raise Exception("Failed to support Tamagotchi")
+        return updated
+
+    @strawberry.mutation
+    def revive_tamagotchi(self, id: str, info) -> Tamagotchi:
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+
+        # Ensure tamagotchi exists
+        t_data = storage.tamagotchis.get(id)
+        if not t_data:
+            raise Exception("Tamagotchi not found")
+
+        # Enforce ownership
+        if t_data.get('owner_id') != user_id:
+            raise Exception("Not authorized to revive this Tamagotchi")
+
+        revived = storage.revive_tamagotchi(user_id, id)
+        if not revived:
+            raise Exception("Failed to revive Tamagotchi")
+        return revived
+
+    @strawberry.mutation
+    def release_tamagotchi(self, id: str, info) -> bool:
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+
+        # Ensure tamagotchi exists
+        t_data = storage.tamagotchis.get(id)
+        if not t_data:
+            # If already gone, consider success to keep UI in sync
+            return True
+
+        # Enforce ownership
+        if t_data.get('owner_id') != user_id:
+            raise Exception("Not authorized to release this Tamagotchi")
+
+        ok = storage.release_tamagotchi(user_id, id)
+        if not ok:
+            raise Exception("Failed to release Tamagotchi")
+        return True

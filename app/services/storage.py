@@ -215,6 +215,125 @@ class GameStorage:
             }))
 
         return self._dict_to_tamagotchi(data)
+
+    def support_tamagotchi(self, supporter_user_id: str, tamagotchi_id: str) -> Optional[Tamagotchi]:
+        data = self.tamagotchis.get(tamagotchi_id)
+        if not data:
+            return None
+        # Cannot support dead pets
+        if not data.get('is_alive', True):
+            return None
+        # Only non-owner can support
+        if data.get('owner_id') == supporter_user_id:
+            return None
+
+        # Determine lowest stat; treat hunger inversely (lower hunger is good)
+        stats = {
+            'happiness': data.get('happiness', 0),
+            'energy': data.get('energy', 0),
+            'health': data.get('health', 0),
+        }
+        hunger_val = data.get('hunger', 0)
+        lowest_key = min(list(stats.keys()) + ['hunger'], key=lambda k: hunger_val if k == 'hunger' else stats[k])
+
+        if lowest_key == 'hunger':
+            data['hunger'] = max(0, hunger_val - 1)
+        else:
+            data[lowest_key] = min(100, data[lowest_key] + 1)
+
+        # Update status
+        if data['health'] <= 0:
+            data['is_alive'] = False
+            data['status'] = 'Dead'
+        elif data['hunger'] > 80:
+            data['status'] = 'Starving'
+        elif data['energy'] < 20:
+            data['status'] = 'Tired'
+        elif data['happiness'] < 30:
+            data['status'] = 'Sad'
+        else:
+            data['status'] = 'Happy'
+
+        self.save_data()
+
+        t = self._dict_to_tamagotchi(data)
+        if self.manager:
+            asyncio.create_task(self.manager.broadcast({
+                'type': 'stats_update',
+                'tamagotchi': {
+                    'id': t.id,
+                    'happiness': t.happiness,
+                    'hunger': t.hunger,
+                    'energy': t.energy,
+                    'health': t.health,
+                    'age': t.age,
+                    'status': t.status,
+                    'is_alive': t.is_alive
+                }
+            }))
+        return t
+
+    def revive_tamagotchi(self, owner_user_id: str, tamagotchi_id: str) -> Optional[Tamagotchi]:
+        """Revive a knocked out pet and reset its stats to base values."""
+        data = self.tamagotchis.get(tamagotchi_id)
+        if not data:
+            return None
+        # Enforce ownership
+        if data.get('owner_id') != owner_user_id:
+            return None
+
+        now = datetime.now().isoformat()
+        # Reset base stats
+        data['happiness'] = 20
+        data['hunger'] = 20
+        data['energy'] = 20
+        data['health'] = 20
+        data['is_alive'] = True
+        data['status'] = 'Happy'
+        data['last_fed'] = now
+        data['last_played'] = now
+        data['last_slept'] = now
+
+        self.tamagotchis[tamagotchi_id] = data
+        self.save_data()
+
+        t = self._dict_to_tamagotchi(data)
+        # Broadcast a single stats update for this pet
+        if self.manager:
+            asyncio.create_task(self.manager.broadcast({
+                'type': 'stats_update',
+                'tamagotchi': {
+                    'id': t.id,
+                    'happiness': t.happiness,
+                    'hunger': t.hunger,
+                    'energy': t.energy,
+                    'health': t.health,
+                    'age': t.age,
+                    'status': t.status,
+                    'is_alive': t.is_alive
+                }
+            }))
+        return t
+
+    def release_tamagotchi(self, owner_user_id: str, tamagotchi_id: str) -> bool:
+        """Release (remove) a pet from the field."""
+        data = self.tamagotchis.get(tamagotchi_id)
+        if not data:
+            return False
+        if data.get('owner_id') != owner_user_id:
+            return False
+
+        # Remove from storage
+        self.tamagotchis.pop(tamagotchi_id, None)
+        self.save_data()
+
+        # Broadcast removal so clients can update UI
+        if self.manager:
+            asyncio.create_task(self.manager.broadcast({
+                'type': 'tamagotchi_removed',
+                'id': tamagotchi_id
+            }))
+        return True
     
     async def update_stats_loop(self):
         while True:
