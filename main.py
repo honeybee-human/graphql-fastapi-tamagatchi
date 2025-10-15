@@ -550,7 +550,11 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
     # Set user as online
     if user_id in storage.users:
         storage.users[user_id]['is_online'] = True
-        storage.save_data()
+        try:
+            storage.schedule_save()
+        except Exception:
+            # Fall back to direct save if schedule not available in this context
+            storage.save_data()
     
     try:
         while True:
@@ -563,13 +567,22 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                     message['x'], 
                     message['y']
                 )
+            elif message['type'] == 'flush_save':
+                # Immediate persistence on client close
+                try:
+                    storage.flush_save()
+                except Exception:
+                    storage.save_data()
     except WebSocketDisconnect:
         manager.disconnect(connection_id, user_id)
         
         # Set user as offline
         if user_id in storage.users:
             storage.users[user_id]['is_online'] = False
-            storage.save_data()
+            try:
+                storage.schedule_save()
+            except Exception:
+                storage.save_data()
 
 # Serve static files (for Vue.js frontend)
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")

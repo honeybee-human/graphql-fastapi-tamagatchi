@@ -58,5 +58,12 @@ export function useWebSocket(currentUser) {
     ws.value.send(JSON.stringify({ type: 'mouse_position', x, y }));
   };
 
-  return { ws, connectWebSocket, sendMousePosition, close, setMessageHandler };
+  const flushSave = () => {
+    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) return;
+    try {
+      ws.value.send(JSON.stringify({ type: 'flush_save' }));
+    } catch (_) {}
+  };
+
+  return { ws, connectWebSocket, sendMousePosition, close, setMessageHandler, flushSave };
 }

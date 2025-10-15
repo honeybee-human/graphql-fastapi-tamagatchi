@@ -19,3 +19,5 @@ TAMAGOTCHI_EMOJIS = ['🐱', '🐶', '🐰', '🐸', '🐧', '🐨', '🦊', '�
 # Update intervals
 STATS_UPDATE_INTERVAL = 1  # seconds
 POSITION_UPDATE_INTERVAL = 0.1  # seconds
+DEBOUNCE_DELAY_SEC = 2.0  # debounce delay for scheduled saves
+BACKUP_INTERVAL_SEC = 30.0  # interval for periodic backup saves

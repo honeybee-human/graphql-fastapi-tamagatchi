@@ -7,17 +7,35 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from ..config import pwd_context, TAMAGOTCHI_EMOJIS, GAME_AREA_WIDTH, GAME_AREA_HEIGHT
+from ..config import (
+    pwd_context,
+    TAMAGOTCHI_EMOJIS,
+    GAME_AREA_WIDTH,
+    GAME_AREA_HEIGHT,
+    DEBOUNCE_DELAY_SEC,
+    BACKUP_INTERVAL_SEC,
+)
 from ..models import User, Tamagotchi, Position
+from ..db import get_connection, init_db_and_migrate_json_users
 
 class GameStorage:
     def __init__(self):
         self.users: Dict[str, dict] = {}
         self.tamagotchis: Dict[str, dict] = {}
         self.mouse_positions: Dict[str, dict] = {}
+        # Ensure DB exists and migrate any JSON-stored users
+        init_db_and_migrate_json_users()
         self.load_data()
+        # Load users from SQLite rather than JSON
+        self._load_users_from_db()
         self._tasks_started = False
         self.manager = None  # Will be set by dependency injection
+        # Debounced + interval persistence for stats (configurable)
+        self._debounce_delay_sec = DEBOUNCE_DELAY_SEC
+        self._backup_interval_sec = BACKUP_INTERVAL_SEC
+        self._save_task = None
+        self._backup_task = None
+        self._dirty = False
     
     def set_connection_manager(self, manager):
         """Set the connection manager for broadcasting"""
@@ -28,11 +46,51 @@ class GameStorage:
         if not self._tasks_started:
             asyncio.create_task(self.update_stats_loop())
             asyncio.create_task(self.update_positions_loop())
+            asyncio.create_task(self._backup_save_loop())
             self._tasks_started = True
 
+    def _cancel_save_task(self):
+        try:
+            if self._save_task and not self._save_task.done():
+                self._save_task.cancel()
+        except Exception:
+            pass
+        finally:
+            self._save_task = None
+
+    async def _debounced_save_worker(self):
+        try:
+            await asyncio.sleep(self._debounce_delay_sec)
+            if self._dirty:
+                self.save_data()
+                self._dirty = False
+        finally:
+            self._save_task = None
+
+    def schedule_save(self):
+        """Mark data dirty and schedule a debounced save (stats-focused)."""
+        self._dirty = True
+        self._cancel_save_task()
+        self._save_task = asyncio.create_task(self._debounced_save_worker())
+
+    def flush_save(self):
+        """Immediately persist data, cancelling any pending debounce."""
+        self._cancel_save_task()
+        if self._dirty:
+            self.save_data()
+            self._dirty = False
+
+    async def _backup_save_loop(self):
+        """Unconditional backup save at a fixed interval for resilience."""
+        while True:
+            await asyncio.sleep(self._backup_interval_sec)
+            # Only persist if at least one alive tamagotchi exists.
+            if any(t.get('is_alive') for t in self.tamagotchis.values()):
+                self.save_data()
+
     def save_data(self):
+        # Persist only non-sensitive game data to JSON; users are in SQLite
         data = {
-            'users': self.users,
             'tamagotchis': self.tamagotchis,
             'mouse_positions': self.mouse_positions
         }
@@ -43,47 +101,127 @@ class GameStorage:
         if os.path.exists('game_data.json'):
             with open('game_data.json', 'r') as f:
                 data = json.load(f)
-                self.users = data.get('users', {})
                 self.tamagotchis = data.get('tamagotchis', {})
                 self.mouse_positions = data.get('mouse_positions', {})
+
+    def _load_users_from_db(self):
+        """Populate in-memory user cache from SQLite (without password hashes)."""
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, username, created_at, mouse_x, mouse_y, is_online, difficulty FROM users"
+            )
+            rows = cur.fetchall()
+            self.users = {}
+            for r in rows:
+                self.users[r['id']] = {
+                    'id': r['id'],
+                    'username': r['username'],
+                    'created_at': r['created_at'],
+                    'mouse_x': float(r['mouse_x'] or 0.0),
+                    'mouse_y': float(r['mouse_y'] or 0.0),
+                    'is_online': bool(r['is_online']),
+                    'difficulty': float(r['difficulty'] or 1.0),
+                }
+        finally:
+            conn.close()
     
     def create_user(self, username: str, password: str) -> User:
-        # Check if username exists
-        for user_data in self.users.values():
-            if user_data['username'] == username:
+        """Create a new user and persist to SQLite (password hashed)."""
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            # Check username uniqueness
+            cur.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+            if cur.fetchone():
                 raise ValueError("Username already exists")
-        
-        user_id = str(uuid.uuid4())
-        hashed_password = pwd_context.hash(password)
-        now = datetime.now().isoformat()
-        
-        user_data = {
-            'id': user_id,
-            'username': username,
-            'password': hashed_password,
-            'created_at': now,
-            'mouse_x': 0.0,
-            'mouse_y': 0.0,
-            'is_online': False,
-            'difficulty': 1.0  # 1.0x default deterioration rate
-        }
-        
-        self.users[user_id] = user_data
-        self.save_data()
-        return User(**{k: v for k, v in user_data.items() if k != 'password'})
+
+            user_id = str(uuid.uuid4())
+            hashed_password = pwd_context.hash(password)
+            now = datetime.now().isoformat()
+
+            cur.execute(
+                """
+                INSERT INTO users (
+                    id, username, password_hash, created_at, mouse_x, mouse_y, is_online, difficulty
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, username, hashed_password, now, 0.0, 0.0, 0, 1.0),
+            )
+            conn.commit()
+
+            # Update in-memory cache (no password)
+            self.users[user_id] = {
+                'id': user_id,
+                'username': username,
+                'created_at': now,
+                'mouse_x': 0.0,
+                'mouse_y': 0.0,
+                'is_online': False,
+                'difficulty': 1.0,
+            }
+            return User(**self.users[user_id])
+        finally:
+            conn.close()
     
     def authenticate_user(self, username: str, password: str) -> Optional[User]:
-        for user_data in self.users.values():
-            if user_data['username'] == username:
-                if pwd_context.verify(password, user_data['password']):
-                    return User(**{k: v for k, v in user_data.items() if k != 'password'})
-        return None
+        """Verify credentials against SQLite and return the user sans password on success."""
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, username, password_hash, created_at, mouse_x, mouse_y, is_online, difficulty FROM users WHERE username = ?",
+                (username,)
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            if not pwd_context.verify(password, row['password_hash']):
+                return None
+            user = {
+                'id': row['id'],
+                'username': row['username'],
+                'created_at': row['created_at'],
+                'mouse_x': float(row['mouse_x'] or 0.0),
+                'mouse_y': float(row['mouse_y'] or 0.0),
+                'is_online': bool(row['is_online']),
+                'difficulty': float(row['difficulty'] or 1.0),
+            }
+            # Keep cache in sync
+            self.users[user['id']] = user
+            return User(**user)
+        finally:
+            conn.close()
     
     def get_user(self, user_id: str) -> Optional[User]:
-        user_data = self.users.get(user_id)
-        if user_data:
-            return User(**{k: v for k, v in user_data.items() if k != 'password'})
-        return None
+        """Fetch user by id from cache or SQLite."""
+        data = self.users.get(user_id)
+        if data:
+            return User(**data)
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, username, created_at, mouse_x, mouse_y, is_online, difficulty FROM users WHERE id = ?",
+                (user_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            data = {
+                'id': row['id'],
+                'username': row['username'],
+                'created_at': row['created_at'],
+                'mouse_x': float(row['mouse_x'] or 0.0),
+                'mouse_y': float(row['mouse_y'] or 0.0),
+                'is_online': bool(row['is_online']),
+                'difficulty': float(row['difficulty'] or 1.0),
+            }
+            self.users[user_id] = data
+            return User(**data)
+        finally:
+            conn.close()
 
     def set_user_difficulty(self, user_id: str, difficulty: float) -> Optional[User]:
         """Set per-user stat deterioration multiplier (clamped between 0.25 and 4)."""
@@ -98,7 +236,15 @@ class GameStorage:
         d = max(0.25, min(4.0, d))
         data['difficulty'] = d
         self.users[user_id] = data
-        self.save_data()
+        # Persist to SQLite
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET difficulty = ? WHERE id = ?", (d, user_id))
+            conn.commit()
+        finally:
+            conn.close()
+        self.schedule_save()
         return self.get_user(user_id)
     
     def create_tamagotchi(self, name: str, owner_id: str) -> Tamagotchi:
@@ -135,7 +281,8 @@ class GameStorage:
         }
         
         self.tamagotchis[tamagotchi_id] = tamagotchi_data
-        self.save_data()
+        # Major event: flush immediately to persist creation
+        self.flush_save()
         
         # Broadcast new tamagotchi
         if self.manager:
@@ -178,6 +325,17 @@ class GameStorage:
         if user_id in self.users:
             self.users[user_id]['mouse_x'] = x
             self.users[user_id]['mouse_y'] = y
+            # Persist to SQLite
+            conn = get_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    "UPDATE users SET mouse_x = ?, mouse_y = ? WHERE id = ?",
+                    (float(x), float(y), user_id)
+                )
+                conn.commit()
+            finally:
+                conn.close()
             
             mouse_data = {
                 'user_id': user_id,
@@ -195,6 +353,23 @@ class GameStorage:
                     'type': 'mouse_position',
                     'data': mouse_data
                 }))
+
+    def set_user_online(self, user_id: str, is_online: bool):
+        """Set a user's online flag and persist to SQLite."""
+        if user_id in self.users:
+            self.users[user_id]['is_online'] = bool(is_online)
+            # Persist to SQLite
+            conn = get_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    "UPDATE users SET is_online = ? WHERE id = ?",
+                    (1 if is_online else 0, user_id)
+                )
+                conn.commit()
+            finally:
+                conn.close()
+            self.schedule_save()
 
     def update_tamagotchi_location(self, tamagotchi_id: str, x: float, y: float) -> Optional[Tamagotchi]:
         """Update a single Tamagotchi's position and broadcast the change."""
@@ -217,7 +392,8 @@ class GameStorage:
         data['position'] = pos
 
         self.tamagotchis[tamagotchi_id] = data
-        self.save_data()
+        # Position changes aren’t critical; schedule to reduce write spam
+        self.schedule_save()
 
         # Broadcast single position update so other clients can reflect it quickly
         if self.manager:
@@ -271,7 +447,11 @@ class GameStorage:
         else:
             data['status'] = 'Happy'
 
-        self.save_data()
+        # Minor change: debounce; on death flush immediately
+        if data['is_alive']:
+            self.schedule_save()
+        else:
+            self.flush_save()
 
         t = self._dict_to_tamagotchi(data)
         if self.manager:
@@ -323,7 +503,10 @@ class GameStorage:
             data['status'] = 'Sad'
         else:
             data['status'] = 'Happy'
-        self.save_data()
+        if data['is_alive']:
+            self.schedule_save()
+        else:
+            self.flush_save()
         t = self._dict_to_tamagotchi(data)
         if self.manager:
             asyncio.create_task(self.manager.broadcast({
@@ -365,7 +548,10 @@ class GameStorage:
             data['status'] = 'Sad'
         else:
             data['status'] = 'Happy'
-        self.save_data()
+        if data['is_alive']:
+            self.schedule_save()
+        else:
+            self.flush_save()
         t = self._dict_to_tamagotchi(data)
         if self.manager:
             asyncio.create_task(self.manager.broadcast({
@@ -408,7 +594,10 @@ class GameStorage:
             data['status'] = 'Sad'
         else:
             data['status'] = 'Happy'
-        self.save_data()
+        if data['is_alive']:
+            self.schedule_save()
+        else:
+            self.flush_save()
         t = self._dict_to_tamagotchi(data)
         if self.manager:
             asyncio.create_task(self.manager.broadcast({
@@ -448,7 +637,8 @@ class GameStorage:
         data['last_slept'] = now
 
         self.tamagotchis[tamagotchi_id] = data
-        self.save_data()
+        # Major event: flush
+        self.flush_save()
 
         t = self._dict_to_tamagotchi(data)
         # Broadcast a single stats update for this pet
@@ -478,7 +668,8 @@ class GameStorage:
 
         # Remove from storage
         self.tamagotchis.pop(tamagotchi_id, None)
-        self.save_data()
+        # Major event: flush
+        self.flush_save()
 
         # Broadcast removal so clients can update UI
         if self.manager:
@@ -493,6 +684,7 @@ class GameStorage:
             await asyncio.sleep(1)  # Update every second
             
             updated_tamagotchis = []
+            death_occurred = False
             for tamagotchi_id, data in self.tamagotchis.items():
                 if not data['is_alive']:
                     continue
@@ -534,6 +726,7 @@ class GameStorage:
                 if data['health'] <= 0:
                     data['is_alive'] = False
                     data['status'] = 'Dead'
+                    death_occurred = True
                 elif data['hunger'] > 80:
                     data['status'] = 'Starving'
                 elif data['energy'] < 20:
@@ -550,7 +743,11 @@ class GameStorage:
                 updated_tamagotchis.append(self._dict_to_tamagotchi(data))
             
             if updated_tamagotchis:
-                self.save_data()
+                # If any pet died, flush immediately; otherwise debounce
+                if death_occurred:
+                    self.flush_save()
+                else:
+                    self.schedule_save()
                 # Broadcast stats update
                 if self.manager:
                     await self.manager.broadcast({

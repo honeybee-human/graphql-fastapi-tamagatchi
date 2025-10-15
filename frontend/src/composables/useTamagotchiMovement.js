@@ -3,6 +3,8 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 export function useTamagotchiMovement(tamagotchisRef) {
   const positionsById = ref({});
   const targetsById = ref({});
+  // Movement metadata for easing: start position, target, start time, duration
+  const movementMetaById = ref({});
   let rafId = null;
 
   const setTargetPosition = (id, evtOrPos) => {
@@ -13,32 +15,59 @@ export function useTamagotchiMovement(tamagotchisRef) {
       ? { x: evtOrPos.clientX, y: evtOrPos.clientY }
       : evtOrPos;
     targetsById.value[id] = pos;
+    const start = positionsById.value[id] || { x: 0, y: 0 };
+    const dx = pos.x - start.x;
+    const dy = pos.y - start.y;
+    const dist = Math.hypot(dx, dy);
+    // Duration scales with distance, clamped for UX (ms)
+    const duration = Math.min(2000, Math.max(200, dist * 5));
+    movementMetaById.value[id] = {
+      startX: start.x,
+      startY: start.y,
+      targetX: pos.x,
+      targetY: pos.y,
+      startedAt: performance.now(),
+      duration,
+    };
   };
 
+  const cancelTarget = (id) => {
+    delete targetsById.value[id];
+    delete movementMetaById.value[id];
+  };
+
+  // Easing function: easeInOutSine
+  const easeInOut = (t) => 0.5 * (1 - Math.cos(Math.PI * t));
+
   const step = () => {
-    const speed = 3; // px per frame
+    const now = performance.now();
     const currentPositions = positionsById.value;
-    const targets = targetsById.value;
     const nextPositions = { ...currentPositions };
     const list = tamagotchisRef?.value || [];
-    for (const id in targets) {
+
+    // Advance all easing animations by time
+    for (const id of Object.keys(movementMetaById.value)) {
+      const meta = movementMetaById.value[id];
       const tinfo = list.find((x) => x.id === id);
       if (!tinfo || !tinfo.isAlive) {
-        delete targets[id];
+        delete movementMetaById.value[id];
+        delete targetsById.value[id];
         continue;
       }
-      const t = targets[id];
-      const p = currentPositions[id] || { x: 0, y: 0 };
-      const dx = t.x - p.x;
-      const dy = t.y - p.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < speed) {
-        nextPositions[id] = { x: t.x, y: t.y };
-        delete targets[id];
-      } else {
-        nextPositions[id] = { x: p.x + (dx / dist) * speed, y: p.y + (dy / dist) * speed };
+      const elapsed = now - meta.startedAt;
+      const p = Math.min(1, Math.max(0, elapsed / meta.duration));
+      const e = easeInOut(p);
+      const nx = meta.startX + (meta.targetX - meta.startX) * e;
+      const ny = meta.startY + (meta.targetY - meta.startY) * e;
+      nextPositions[id] = { x: nx, y: ny };
+      if (p >= 1) {
+        // Animation complete
+        nextPositions[id] = { x: meta.targetX, y: meta.targetY };
+        delete movementMetaById.value[id];
+        delete targetsById.value[id];
       }
     }
+
     positionsById.value = nextPositions;
     rafId = requestAnimationFrame(step);
   };
@@ -48,11 +77,12 @@ export function useTamagotchiMovement(tamagotchisRef) {
 
   onMounted(() => {
     const list = tamagotchisRef?.value || [];
-    list.forEach((t) => { positionsById.value[t.id] = t.position ? { x: t.position.x, y: t.position.y } : { x: 0, y: 0 }; });
+    const W = 800, H = 600;
+    list.forEach((t) => { positionsById.value[t.id] = { x: Math.random() * W, y: Math.random() * H }; });
   });
 
   onBeforeUnmount(stopTracking);
 
-  const hasTarget = (id) => !!targetsById.value[id];
-  return { positionsById, setTargetPosition, startTracking, stopTracking, hasTarget };
+  const hasTarget = (id) => !!movementMetaById.value[id];
+  return { positionsById, setTargetPosition, startTracking, stopTracking, hasTarget, cancelTarget };
 }

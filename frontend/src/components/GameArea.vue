@@ -10,14 +10,21 @@
       <span class="cursor-label">{{ pos.username }}</span>
     </div>
 
+    <!-- My cursor (paw) -->
+    <div v-if="myMouse"
+      class="my-cursor"
+      :style="{ transform: `translate(${myMouse.x}px, ${myMouse.y}px)` }"
+    >🐾</div>
+
     <!-- Tamagotchi sprites -->
     <div
       v-for="tamagotchi in visibleTamagotchis"
       :key="tamagotchi.id"
       class="tamagotchi-sprite"
-      :class="{ knocked: !tamagotchi.isAlive }"
+      :class="{ knocked: !tamagotchi.isAlive, dragging: draggingId === tamagotchi.id }"
       :style="spriteStyle(tamagotchi.id)"
       @click="onSpriteClick(tamagotchi.id, $event)"
+      @mousedown.stop="onSpriteMouseDown(tamagotchi.id, $event)"
     >
       <div class="sprite-emoji">{{ tamagotchi.emoji }}</div>
       <div class="sprite-name">{{ tamagotchi.name }}</div>
@@ -81,14 +88,22 @@ export default {
     currentUser: { type: Object, required: false, default: null },
     otherMousePositions: { type: Array, required: true }
   },
-  emits: ['sprite-click', 'mouse-move', 'feed', 'play', 'sleep', 'revive', 'release', 'support'],
+  emits: ['sprite-click', 'mouse-move', 'feed', 'play', 'sleep', 'revive', 'release', 'support', 'drag-start', 'dragging', 'drag-end'],
   data() {
     return {
-      gameArea: null
+      gameArea: null,
+      myMouse: null,
+      draggingId: null,
+      dragOffset: { x: 0, y: 0 },
+      spriteSize: 48,
     };
   },
   mounted() {
     this.gameArea = this.$refs.gameArea;
+    window.addEventListener('mouseup', this.onDragEnd);
+  },
+  beforeUnmount() {
+    window.removeEventListener('mouseup', this.onDragEnd);
   },
   methods: {
     spriteStyle(id) {
@@ -114,7 +129,37 @@ export default {
       const rect = this.gameArea.getBoundingClientRect();
       const x = evt.clientX - rect.left;
       const y = evt.clientY - rect.top;
+      this.myMouse = { x, y };
       this.$emit('mouse-move', { x, y });
+      if (this.draggingId) this.onDragMove(x, y);
+    },
+    onSpriteMouseDown(id, evt) {
+      if (!this.gameArea) return;
+      const rect = this.gameArea.getBoundingClientRect();
+      const x = evt.clientX - rect.left;
+      const y = evt.clientY - rect.top;
+      const current = this.positionsById?.[id] || { x: 0, y: 0 };
+      this.dragOffset = { x: x - current.x, y: y - current.y };
+      this.draggingId = id;
+      this.$emit('drag-start', { id });
+    },
+    clamp(val, min, max) { return Math.min(max, Math.max(min, val)); },
+    onDragMove(mouseX, mouseY) {
+      if (!this.draggingId || !this.gameArea) return;
+      const rect = this.gameArea.getBoundingClientRect();
+      const areaW = rect.width;
+      const areaH = rect.height;
+      const radius = this.spriteSize / 2;
+      const x = this.clamp(mouseX - this.dragOffset.x, 0, areaW - this.spriteSize);
+      const y = this.clamp(mouseY - this.dragOffset.y, 0, areaH - this.spriteSize);
+
+      // Emit dragging for parent to update position and handle collisions
+      this.$emit('dragging', { id: this.draggingId, x, y, radius });
+    },
+    onDragEnd() {
+      if (!this.draggingId) return;
+      this.$emit('drag-end', { id: this.draggingId });
+      this.draggingId = null;
     }
   }
 };

@@ -3,7 +3,7 @@
   position: absolute;
   cursor: pointer;
   text-align: center;
-  transition: transform 0.1s;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 5;
 }
 
@@ -83,4 +83,8 @@
 .mini-action-btn:hover {
   background: rgba(255, 255, 255, 1);
   transform: scale(1.1);
+}
+
+.tamagotchi-sprite.dragging {
+  transition: none;
 }

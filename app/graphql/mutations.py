@@ -8,7 +8,8 @@ from ..models import (
     CreateTamagotchiInput,
     MousePositionInput,
     AuthPayload,
-    Tamagotchi
+    Tamagotchi,
+    User,
 )
 from ..services.auth import create_access_token
 from ..services.storage import GameStorage
@@ -208,7 +209,7 @@ class Mutation:
         return True
 
     @strawberry.mutation
-    def set_difficulty(self, difficulty: float, info) -> "User":
+    def set_difficulty(self, difficulty: float, info) -> User:
         # Require authentication
         user_id = info.context.get("user_id")
         if not user_id:

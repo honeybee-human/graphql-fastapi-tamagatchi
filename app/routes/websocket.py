@@ -11,8 +11,7 @@ def setup_websocket_routes(app: FastAPI, storage: GameStorage, manager: Connecti
         
         # Set user as online
         if user_id in storage.users:
-            storage.users[user_id]['is_online'] = True
-            storage.save_data()
+            storage.set_user_online(user_id, True)
         
         try:
             while True:
@@ -25,10 +24,12 @@ def setup_websocket_routes(app: FastAPI, storage: GameStorage, manager: Connecti
                         message['x'], 
                         message['y']
                     )
+                elif message['type'] == 'flush_save':
+                    # Immediate persistence on client close
+                    storage.flush_save()
         except WebSocketDisconnect:
             manager.disconnect(connection_id, user_id)
             
             # Set user as offline
             if user_id in storage.users:
-                storage.users[user_id]['is_online'] = False
-                storage.save_data()
+                storage.set_user_online(user_id, False)

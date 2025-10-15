@@ -18,3 +18,11 @@
   margin-top: 2px;
   white-space: nowrap;
 }
+
+.my-cursor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 11;
+  font-size: 22px;
+  transform-origin: center;
+}

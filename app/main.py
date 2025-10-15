@@ -52,7 +52,14 @@ async def lifespan(app: FastAPI):
     await storage.start_background_tasks()
     yield
     # Shutdown (cleanup if needed)
-    pass
+    try:
+        storage.flush_save()
+    except Exception:
+        # Ensure a final save even if flush didn't find pending changes
+        try:
+            storage.save_data()
+        except Exception:
+            pass
 
 # FastAPI app with lifespan
 app = FastAPI(title="Multiplayer Tamagotchi Game API", lifespan=lifespan)

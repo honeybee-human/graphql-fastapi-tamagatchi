@@ -1,0 +1,8 @@
+.online-modal-btn { background: #fff; border: 1px solid #ddd; color: #333; padding: 6px 10px; border-radius: 6px; }
+.online-count { font-size: 14px; color: #333; }
+.online-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #20bf6b; margin-left: 6px; animation: pulseOpacity 2s ease-in-out infinite alternate; }
+@keyframes pulseOpacity { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+.checkbox-label { display: inline-flex; gap: 8px; align-items: center; }
+.pretty-checkbox { appearance: none; width: 16px; height: 16px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; }
+.pretty-checkbox:hover { border-color: #20bf6b; }
+.pretty-checkbox:checked { background: linear-gradient(45deg, #a8e6cf 0%, #dcedc1 100%); border-color: #20bf6b; }
