@@ -50,9 +50,9 @@
       "username": "sdf",
       "password": "$pbkdf2-sha256$29000$7x1j7D1HyHlPKQVgTAlhbA$A4XjyFUcBW.5tMXSmBSliod6Yb9y5FquKPHAE2n3mbk",
       "created_at": "2025-10-14T04:06:43.774979",
-      "mouse_x": 904,
-      "mouse_y": 1029,
-      "is_online": true
+      "mouse_x": 1171,
+      "mouse_y": 16,
+      "is_online": false
     },
     "db2e3778-2016-4f5e-a13d-b6caa9ca7bcd": {
       "id": "db2e3778-2016-4f5e-a13d-b6caa9ca7bcd",
@@ -79,6 +79,15 @@
       "created_at": "2025-10-14T00:59:40.632991",
       "mouse_x": 0,
       "mouse_y": 40,
+      "is_online": false
+    },
+    "06f80442-efd0-44cf-89b6-55de4dfc3bd0": {
+      "id": "06f80442-efd0-44cf-89b6-55de4dfc3bd0",
+      "username": "asfdc",
+      "password": "$pbkdf2-sha256$29000$k/J.D.H8n5Nybq11jnEuZQ$7R.wEkO6540h9KhLxRRJaRdOpPGXMiGDYzCa0w4EdI8",
+      "created_at": "2025-10-14T18:59:20.717243",
+      "mouse_x": 1281,
+      "mouse_y": 1030,
       "is_online": false
     }
   },
@@ -312,6 +321,29 @@
         "speed": 1.0
       },
       "emoji": "\ud83d\udc36"
+    },
+    "c0c2d012-2b05-4486-ab43-0879903a2d2b": {
+      "id": "c0c2d012-2b05-4486-ab43-0879903a2d2b",
+      "name": "asfasfd",
+      "owner_id": "06f80442-efd0-44cf-89b6-55de4dfc3bd0",
+      "happiness": 0,
+      "hunger": 100,
+      "energy": 0,
+      "health": 0,
+      "age": 211,
+      "last_fed": "2025-10-14T18:59:36.929292",
+      "last_played": "2025-10-14T18:59:36.929292",
+      "last_slept": "2025-10-14T18:59:36.929292",
+      "created_at": "2025-10-14T18:59:36.929292",
+      "is_alive": false,
+      "status": "Dead",
+      "position": {
+        "x": 518.9515167300767,
+        "y": 304.6163126447024,
+        "direction": 0.7677286538130473,
+        "speed": 1.0
+      },
+      "emoji": "\ud83d\udc31"
     }
   },
   "mouse_positions": {
@@ -353,9 +385,9 @@
     "02d18f2c-f913-4614-9811-3745ab6b36b0": {
       "user_id": "02d18f2c-f913-4614-9811-3745ab6b36b0",
       "username": "sdf",
-      "x": 904,
-      "y": 1029,
-      "timestamp": "2025-10-14T00:22:56.502019"
+      "x": 1171,
+      "y": 16,
+      "timestamp": "2025-10-14T01:30:45.825204"
     },
     "db2e3778-2016-4f5e-a13d-b6caa9ca7bcd": {
       "user_id": "db2e3778-2016-4f5e-a13d-b6caa9ca7bcd",
@@ -377,6 +409,13 @@
       "x": 0,
       "y": 40,
       "timestamp": "2025-10-14T01:26:43.715607"
+    },
+    "06f80442-efd0-44cf-89b6-55de4dfc3bd0": {
+      "user_id": "06f80442-efd0-44cf-89b6-55de4dfc3bd0",
+      "username": "asfdc",
+      "x": 1281,
+      "y": 1030,
+      "timestamp": "2025-10-14T19:02:17.418980"
     }
   }
 }

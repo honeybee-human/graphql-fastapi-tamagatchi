@@ -62,3 +62,65 @@ export const SUPPORT_TAMAGOTCHI = gql`
     }
   }
 `;
+
+export const REVIVE_TAMAGOTCHI = gql`
+  mutation ReviveTamagotchi($id: ID!) {
+    reviveTamagotchi(id: $id) {
+      id
+      happiness
+      hunger
+      energy
+      health
+      isAlive
+      status
+    }
+  }
+`;
+
+export const RELEASE_TAMAGOTCHI = gql`
+  mutation ReleaseTamagotchi($id: ID!) {
+    releaseTamagotchi(id: $id)
+  }
+`;
+
+export const FEED_TAMAGOTCHI = gql`
+  mutation FeedTamagotchi($id: ID!) {
+    feedTamagotchi(id: $id) {
+      id
+      happiness
+      hunger
+      energy
+      health
+      isAlive
+      status
+    }
+  }
+`;
+
+export const PLAY_TAMAGOTCHI = gql`
+  mutation PlayTamagotchi($id: ID!) {
+    playTamagotchi(id: $id) {
+      id
+      happiness
+      hunger
+      energy
+      health
+      isAlive
+      status
+    }
+  }
+`;
+
+export const SLEEP_TAMAGOTCHI = gql`
+  mutation SleepTamagotchi($id: ID!) {
+    sleepTamagotchi(id: $id) {
+      id
+      happiness
+      hunger
+      energy
+      health
+      isAlive
+      status
+    }
+  }
+`;

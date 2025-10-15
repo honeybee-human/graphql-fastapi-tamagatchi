@@ -1,0 +1,31 @@
+/* Buttons and actions */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.actions button {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: white;
+}
+
+.action-play { background: #2ecc71; }
+.action-feed { background: #f1c40f; color: #333; }
+.action-sleep { background: #3498db; }
+.action-heal { background: #9b59b6; }
+.action-wake { background: #34495e; }
+.action-remove { background: #e74c3c; }
+
+.actions button:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.actions button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}

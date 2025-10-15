@@ -102,6 +102,69 @@ class Mutation:
         return updated
 
     @strawberry.mutation
+    def feed_tamagotchi(self, id: str, info) -> Tamagotchi:
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+
+        # Ensure tamagotchi exists
+        t_data = storage.tamagotchis.get(id)
+        if not t_data:
+            raise Exception("Tamagotchi not found")
+
+        # Enforce ownership
+        if t_data.get('owner_id') != user_id:
+            raise Exception("Not authorized to feed this Tamagotchi")
+
+        updated = storage.feed_tamagotchi(user_id, id)
+        if not updated:
+            raise Exception("Failed to feed Tamagotchi")
+        return updated
+
+    @strawberry.mutation
+    def play_tamagotchi(self, id: str, info) -> Tamagotchi:
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+
+        # Ensure tamagotchi exists
+        t_data = storage.tamagotchis.get(id)
+        if not t_data:
+            raise Exception("Tamagotchi not found")
+
+        # Enforce ownership
+        if t_data.get('owner_id') != user_id:
+            raise Exception("Not authorized to play with this Tamagotchi")
+
+        updated = storage.play_tamagotchi(user_id, id)
+        if not updated:
+            raise Exception("Failed to play with Tamagotchi")
+        return updated
+
+    @strawberry.mutation
+    def sleep_tamagotchi(self, id: str, info) -> Tamagotchi:
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+
+        # Ensure tamagotchi exists
+        t_data = storage.tamagotchis.get(id)
+        if not t_data:
+            raise Exception("Tamagotchi not found")
+
+        # Enforce ownership
+        if t_data.get('owner_id') != user_id:
+            raise Exception("Not authorized to let this Tamagotchi sleep")
+
+        updated = storage.sleep_tamagotchi(user_id, id)
+        if not updated:
+            raise Exception("Failed to update Tamagotchi sleep")
+        return updated
+
+    @strawberry.mutation
     def revive_tamagotchi(self, id: str, info) -> Tamagotchi:
         # Require authentication
         user_id = info.context.get("user_id")
@@ -143,3 +206,14 @@ class Mutation:
         if not ok:
             raise Exception("Failed to release Tamagotchi")
         return True
+
+    @strawberry.mutation
+    def set_difficulty(self, difficulty: float, info) -> "User":
+        # Require authentication
+        user_id = info.context.get("user_id")
+        if not user_id:
+            raise Exception("Authentication required")
+        updated_user = storage.set_user_difficulty(user_id, difficulty)
+        if not updated_user:
+            raise Exception("Failed to set difficulty")
+        return updated_user

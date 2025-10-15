@@ -1,296 +1,82 @@
 <template>
   <div id="app">
     <!-- Login/Register Screen -->
-    <div v-if="!isAuthenticated" class="auth-screen">
-      <div class="auth-container">
-        <h1>🐾 Multiplayer Tamagotchi 🐾</h1>
-
-        <div class="auth-tabs">
-          <button
-            @click="authMode = 'login'"
-            :class="{ active: authMode === 'login' }"
-          >
-            Login
-          </button>
-          <button
-            @click="authMode = 'register'"
-            :class="{ active: authMode === 'register' }"
-          >
-            Register
-          </button>
-        </div>
-
-        <form @submit.prevent="handleAuth" class="auth-form">
-          <input v-model="authData.username" placeholder="Username" required />
-          <input
-            v-model="authData.password"
-            type="password"
-            placeholder="Password"
-            required
-          />
-          <button type="submit" :disabled="authLoading">
-            {{
-              authLoading
-                ? "Loading..."
-                : authMode === "login"
-                ? "Login"
-                : "Register"
-            }}
-          </button>
-        </form>
-
-        <div v-if="authError" class="error">{{ authError }}</div>
-      </div>
-    </div>
+    <AuthScreen
+      v-if="!isAuthenticated"
+      :auth-mode="authMode"
+      :auth-data="authData"
+      :auth-loading="authLoading"
+      :auth-error="authError"
+      @set-auth-mode="val => authMode = val"
+      @submit="handleAuth"
+    />
 
     <!-- Game Screen -->
-    <div v-else class="game-screen" @mousemove="updateMousePosition">
+    <div v-else class="game-screen">
       <!-- Header -->
-      <div class="header">
-        <h1>🐾 Multiplayer Tamagotchi 🐾</h1>
-        <div class="user-info">
-          <button class="online-modal-btn" ref="onlineBtnRef" @click="openOnlineModal">👥 Online</button>
-          <span class="online-count">{{ onlineUsers.length }} users online</span><span class="online-indicator"></span>
-          <span>Welcome, {{ currentUser?.username }}!</span>
-          <button @click="logout" class="logout-btn">Logout</button>
-        </div>
-      </div>
+      <HeaderBar
+        :current-user="currentUser"
+        :selected-difficulty="selectedDifficulty"
+        :difficulty-options="difficultyOptions"
+        :online-users-count="onlineUsers.length"
+        @open-online-modal="openOnlineModal"
+        @logout="logout"
+        @update-difficulty="val => { selectedDifficulty = val; updateDifficulty(); }"
+      />
 
       <!-- Game Area -->
-      <div class="game-area" ref="gameArea">
-        <!-- Other users' mouse cursors -->
-        <div
-          v-for="mouse in otherMousePositions"
-          :key="mouse.user_id"
-          class="mouse-cursor"
-          :style="{ left: mouse.x + 'px', top: mouse.y + 'px' }"
-        >
-          <div class="cursor-pointer">🖱️</div>
-          <div class="cursor-label">{{ mouse.username }}</div>
-        </div>
-
-        <!-- Tamagotchis -->
-        <div
-          v-for="tamagotchi in visibleTamagotchis"
-          :key="tamagotchi.id"
-          class="tamagotchi-sprite"
-          :class="{
-            dead: !tamagotchi.isAlive,
-            mine: tamagotchi.ownerId === currentUser?.id,
-          }"
-          :style="positionsById[tamagotchi.id] && {
-            transform: `translate(${positionsById[tamagotchi.id].x}px, ${positionsById[tamagotchi.id].y}px)`
-          }"
-          @click="onSpriteClick(tamagotchi.id, $event)"
-        >
-          <!-- Stats above the icon -->
-          <div class="sprite-stats">
-            <div class="mini-stat">❤️{{ tamagotchi.happiness }}</div>
-            <div class="mini-stat">🍎{{ tamagotchi.hunger }}</div>
-            <div class="mini-stat">⚡{{ tamagotchi.energy }}</div>
-            <div class="mini-stat">💚{{ tamagotchi.health }}</div>
-          </div>
-          
-          <!-- Main sprite -->
-          <div class="sprite-emoji">{{ tamagotchi.emoji }}</div>
-          <div class="sprite-name">{{ tamagotchi.name }}</div>
-          <div class="sprite-status">{{ displayStatus(tamagotchi.status) }}</div>
-          
-          <!-- Action buttons below (only for owned and alive Tamagotchis) -->
-          <div 
-            v-if="tamagotchi.ownerId === currentUser?.id && tamagotchi.isAlive" 
-            class="sprite-actions"
-          >
-            <button @click.stop="feedTamagotchi(tamagotchi)" class="mini-action-btn">🍎</button>
-            <button @click.stop="playWithTamagotchi(tamagotchi)" class="mini-action-btn">🎮</button>
-            <button @click.stop="sleepTamagotchi(tamagotchi)" class="mini-action-btn">😴</button>
-          </div>
-          <!-- Owner actions for knocked out pets -->
-          <div 
-            v-else-if="tamagotchi.ownerId === currentUser?.id && !tamagotchi.isAlive" 
-            class="sprite-actions"
-          >
-            <button @click.stop="reviveTamagotchi(tamagotchi)" class="mini-action-btn">💉 Revive</button>
-            <button @click.stop="releaseTamagotchi(tamagotchi)" class="mini-action-btn">🗑️ Release</button>
-          </div>
-          <!-- Other users' heart support (only for non-owners and alive) -->
-          <div 
-            v-if="tamagotchi.ownerId !== currentUser?.id && tamagotchi.isAlive" 
-            class="sprite-actions"
-          >
-            <button @click.stop="supportTamagotchi(tamagotchi)" class="mini-action-btn">💚</button>
-          </div>
-        </div>
-      </div>
+      <GameArea
+        :visible-tamagotchis="visibleTamagotchis"
+        :positions-by-id="positionsById"
+        :current-user="currentUser"
+        :other-mouse-positions="otherMousePositions"
+        @sprite-click="onSpriteClickFromChild"
+        @mouse-move="onMouseMove"
+        @feed="t => feedTamagotchi(t)"
+        @play="t => playWithTamagotchi(t)"
+        @sleep="t => sleepTamagotchi(t)"
+        @revive="t => reviveTamagotchi(t)"
+        @release="t => releaseTamagotchi(t)"
+        @support="t => supportTamagotchi(t)"
+      />
 
       <!-- Control Panel -->
-      <div class="control-panel">
-        <!-- Create Tamagotchi -->
-        <div class="create-section">
-          <h3>Create New Tamagotchi</h3>
-          <div class="input-group">
-            <input
-              v-model="newTamagotchiName"
-              placeholder="Tamagotchi name"
-              @keyup.enter="createTamagotchi"
-            />
-            <button
-              @click="createTamagotchi"
-              :disabled="!newTamagotchiName.trim()"
-            >
-              Create
-            </button>
-          </div>
-          <div class="filter-row">
-            <label class="checkbox-label"><input type="checkbox" v-model="showMyKnockedOut" class="pretty-checkbox" /> <span>show my knocked out pets?</span></label>
-          </div>
-          <div class="previous-names">
-            <h4>Previous Pets</h4>
-            <div class="names-list">
-              <button
-                v-for="t in myTamagotchis"
-                :key="t.id"
-                class="name-item"
-                @click="selectTamagotchi(t)"
-              >
-                {{ t.name }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Selected Tamagotchi Details -->
-        <div v-if="selectedTamagotchi" class="tamagotchi-details">
-          <h3>{{ selectedTamagotchi.name }}</h3>
-          <div class="owner-info">
-            Owner: {{ getOwnerName(selectedTamagotchi.ownerId) }}
-            <span
-              v-if="selectedTamagotchi.ownerId === currentUser?.id"
-              class="mine-badge"
-              >YOURS</span
-            >
-          </div>
-
-          <div class="stats">
-            <div class="stat">
-              <label>❤️ Happiness</label>
-              <div class="stat-bar">
-                <div
-                  class="stat-fill happiness"
-                  :style="{ width: selectedTamagotchi.happiness + '%' }"
-                ></div>
-              </div>
-              <span>{{ selectedTamagotchi.happiness }}/100</span>
-            </div>
-
-            <div class="stat">
-              <label>🍎 Hunger</label>
-              <div class="stat-bar">
-                <div
-                  class="stat-fill hunger"
-                  :style="{ width: selectedTamagotchi.hunger + '%' }"
-                ></div>
-              </div>
-              <span>{{ selectedTamagotchi.hunger }}/100</span>
-            </div>
-
-            <div class="stat">
-              <label>⚡ Energy</label>
-              <div class="stat-bar">
-                <div
-                  class="stat-fill energy"
-                  :style="{ width: selectedTamagotchi.energy + '%' }"
-                ></div>
-              </div>
-              <span>{{ selectedTamagotchi.energy }}/100</span>
-            </div>
-
-            <div class="stat">
-              <label>💚 Health</label>
-              <div class="stat-bar">
-                <div
-                  class="stat-fill health"
-                  :style="{ width: selectedTamagotchi.health + '%' }"
-                ></div>
-              </div>
-              <span>{{ selectedTamagotchi.health }}/100</span>
-            </div>
-          </div>
-
-          <div class="age-info">
-            Age: {{ Math.floor(selectedTamagotchi.age / 60) }} minutes,
-            {{ selectedTamagotchi.age % 60 }} seconds
-          </div>
-
-          <!-- Actions (only for owned Tamagotchis) -->
-          <div
-            v-if="
-              selectedTamagotchi.ownerId === currentUser?.id &&
-              selectedTamagotchi.isAlive
-            "
-            class="actions"
-          >
-            <button @click="feedTamagotchi" class="action-btn feed">
-              🍎 Feed
-            </button>
-            <button @click="playWithTamagotchi" class="action-btn play">
-              🎮 Play
-            </button>
-            <button @click="sleepTamagotchi" class="action-btn sleep">
-              😴 Sleep
-            </button>
-          </div>
-
-          <div v-else-if="!selectedTamagotchi.isAlive" class="dead-message">
-            This Tamagotchi is knocked out
-          </div>
-
-          <div v-else class="not-owner-message">
-            👀 You can only interact with your own Tamagotchis
-          </div>
-        </div>
-
-        <!-- Online Users -->
-        <div class="online-users">
-          <h3>Online Users ({{ onlineUsers.length }})</h3>
-          <div class="user-list">
-            <div v-for="user in onlineUsers" :key="user.id" class="user-item">
-              <span class="user-name">{{ user.username }}</span>
-              <span v-if="user.id === currentUser?.id" class="you-badge"
-                >YOU</span
-              >
-            </div>
-          </div>
-        </div>
-      </div>
+      <ControlPanel
+        :selected-tamagotchi="selectedTamagotchi"
+        :current-user="currentUser"
+        :my-tamagotchis="myTamagotchis"
+        :show-my-knocked-out="showMyKnockedOut"
+        :new-tamagotchi-name="newTamagotchiName"
+        :difficulty-options="difficultyOptions"
+        :selected-difficulty="selectedDifficulty"
+        :all-users="allUsers"
+        @update:showMyKnockedOut="val => showMyKnockedOut = val"
+        @update:newTamagotchiName="val => newTamagotchiName = val"
+        @create-tamagotchi="createTamagotchi"
+        @update-difficulty="val => { selectedDifficulty = val; updateDifficulty(); }"
+        @select-tamagotchi="selectTamagotchi"
+        @feed="t => feedTamagotchi(t)"
+        @play="t => playWithTamagotchi(t)"
+        @sleep="t => sleepTamagotchi(t)"
+        @revive="t => reviveTamagotchi(t)"
+        @release="t => releaseTamagotchi(t)"
+        @support="t => supportTamagotchi(t)"
+      />
 
       <!-- Online Users Modal -->
-      <div v-if="showOnlineModal" class="modal-overlay" @click.self="showOnlineModal = false">
-        <div class="modal anchored" :style="modalStyle">
-          <div class="modal-header">
-            <h3>Online Users</h3>
-            <button class="close-btn" @click="showOnlineModal = false">✖</button>
-          </div>
-          <div class="modal-body">
-            <div class="filter-row">
-              <label class="checkbox-label"><input type="checkbox" v-model="showDeadPets" class="pretty-checkbox" /> <span>show other users' knocked out pets?</span></label>
-            </div>
-            <div class="user-toggle-list">
-              <div v-for="user in onlineOthers" :key="user.id" class="toggle-item">
-                <label class="checkbox-label">
-                  <input type="checkbox" :value="user.id" v-model="selectedUserIds" class="pretty-checkbox" />
-                  <span>{{ user.username }}</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <OnlineUsersModal
+        v-if="showOnlineModal"
+        :online-others="onlineOthers"
+        :selected-user-ids="selectedUserIds"
+        :show-dead-pets="showDeadPets"
+        :modal-style="modalStyle"
+        @close="showOnlineModal = false"
+        @update:selectedUserIds="val => selectedUserIds = val"
+        @update:showDeadPets="val => showDeadPets = val"
+      />
 
       <!-- Toast notifications -->
-      <div class="toast-container">
-        <div v-for="toast in toasts" :key="toast.id" class="toast" :class="toast.type">{{ toast.message }}</div>
-      </div>
+      <ToastContainer :toasts="toasts" />
     </div>
   </div>
 </template>
@@ -298,161 +84,20 @@
 <script>
 import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useQuery, useMutation, useSubscription } from "@vue/apollo-composable";
-import gql from "graphql-tag";
 import { useTamagotchiMovement } from "./composables/useTamagotchiMovement";
 import { useDebouncedPersistence } from "./composables/usePersistence";
+import AuthScreen from './components/AuthScreen.vue';
+import HeaderBar from './components/HeaderBar.vue';
+import GameArea from './components/GameArea.vue';
+import ControlPanel from './components/ControlPanel.vue';
+import OnlineUsersModal from './components/OnlineUsersModal.vue';
+import ToastContainer from './components/ToastContainer.vue';
+import { useWebSocket } from './composables/useWebSocket';
+import { useTamagotchiActions } from './composables/useTamagotchiActions';
+import { LOGIN_MUTATION, REGISTER_MUTATION, SET_DIFFICULTY } from './graphql/auth';
+import { GET_ALL_TAMAGOTCHIS, GET_ALL_USERS, CREATE_TAMAGOTCHI, TAMAGOTCHI_UPDATES_SUBSCRIPTION } from './graphql/tamagotchi';
 
 // GraphQL queries and mutations
-const LOGIN_MUTATION = gql`
-  mutation Login($input: LoginInput!) {
-    login(input: $input) {
-      token
-      user {
-        id
-        username
-        createdAt
-      }
-    }
-  }
-`;
-
-const REGISTER_MUTATION = gql`
-  mutation Register($input: CreateUserInput!) {
-    register(input: $input) {
-      token
-      user {
-        id
-        username
-        createdAt
-      }
-    }
-  }
-`;
-
-const GET_ALL_TAMAGOTCHIS = gql`
-  query GetAllTamagotchis {
-    allTamagotchis {
-      id
-      name
-      ownerId
-      happiness
-      hunger
-      energy
-      health
-      age
-      isAlive
-      status
-      position {
-        x
-        y
-        direction
-        speed
-      }
-      emoji
-    }
-  }
-`;
-
-const GET_ALL_USERS = gql`
-  query GetAllUsers {
-    allUsers {
-      id
-      username
-      isOnline
-    }
-  }
-`;
-
-const CREATE_TAMAGOTCHI = gql`
-  mutation CreateTamagotchi($input: CreateTamagotchiInput!) {
-    createTamagotchi(input: $input) {
-      id
-      name
-      ownerId
-      happiness
-      hunger
-      energy
-      health
-      age
-      isAlive
-      status
-      position {
-        x
-        y
-        direction
-        speed
-      }
-      emoji
-    }
-  }
-`;
-
-const TAMAGOTCHI_UPDATES_SUBSCRIPTION = gql`
-  subscription TamagotchiUpdates {
-    tamagotchiUpdates {
-      type
-      tamagotchi {
-        id
-        name
-        ownerId
-        happiness
-        hunger
-        energy
-        health
-        age
-        isAlive
-        status
-        position {
-          x
-          y
-          direction
-          speed
-        }
-        emoji
-      }
-      positions {
-        id
-        x
-        y
-        direction
-      }
-    }
-  }
-`;
-
-const SUPPORT_TAMAGOTCHI = gql`
-  mutation SupportTamagotchi($id: ID!) {
-    supportTamagotchi(id: $id) {
-      id
-      happiness
-      hunger
-      energy
-      health
-      isAlive
-      status
-    }
-  }
-`;
-
-const REVIVE_TAMAGOTCHI = gql`
-  mutation ReviveTamagotchi($id: ID!) {
-    reviveTamagotchi(id: $id) {
-      id
-      happiness
-      hunger
-      energy
-      health
-      isAlive
-      status
-    }
-  }
-`;
-
-const RELEASE_TAMAGOTCHI = gql`
-  mutation ReleaseTamagotchi($id: ID!) {
-    releaseTamagotchi(id: $id)
-  }
-`;
 
 export default {
   name: "App",
@@ -483,8 +128,7 @@ export default {
     const hiddenDeadMineIds = ref(new Set());
     const toasts = ref([]);
 
-    // WebSocket connection
-    const ws = ref(null);
+    // WebSocket connection handled via composable below
 
     // Computed properties
     const onlineUsers = computed(() => allUsers.value.filter((user) => user.isOnline));
@@ -492,10 +136,12 @@ export default {
     const myTamagotchis = computed(() => allTamagotchis.value.filter((t) => t.ownerId === currentUser.value?.id));
     const visibleTamagotchis = computed(() =>
       allTamagotchis.value.filter((t) => {
-        const ownerSelected = selectedUserIds.value.length === 0
-          ? true
-          : selectedUserIds.value.includes(t.ownerId);
         const isMine = t.ownerId === currentUser.value?.id;
+        const ownerSelected = isMine
+          ? true
+          : selectedUserIds.value.length === 0
+            ? true
+            : selectedUserIds.value.includes(t.ownerId);
         const deadOk = t.isAlive ? true : (isMine ? showMyKnockedOut.value : showDeadPets.value);
         const hiddenMineDead = isMine && hiddenDeadMineIds.value.has(t.id);
         return ownerSelected && deadOk && !hiddenMineDead;
@@ -515,9 +161,7 @@ export default {
 
     // GraphQL subscriptions
     const { result: subscriptionResult } = useSubscription(TAMAGOTCHI_UPDATES_SUBSCRIPTION);
-    const { mutate: supportMutation } = useMutation(SUPPORT_TAMAGOTCHI);
-    const { mutate: reviveMutation } = useMutation(REVIVE_TAMAGOTCHI);
-    const { mutate: releaseMutation } = useMutation(RELEASE_TAMAGOTCHI);
+    const { mutate: setDifficultyMutation } = useMutation(SET_DIFFICULTY);
 
     // Watch for subscription updates
     watch(subscriptionResult, (newResult) => {
@@ -612,6 +256,7 @@ export default {
         isAuthenticated.value = true;
 
         // Connect to WebSocket
+        setMessageHandler(handleWebSocketMessage);
         connectWebSocket();
 
         // Load initial data
@@ -628,34 +273,10 @@ export default {
       localStorage.removeItem("user");
       currentUser.value = null;
       isAuthenticated.value = false;
-
-      if (ws.value) {
-        ws.value.close();
-        ws.value = null;
-      }
+      close();
     };
-
-    // WebSocket methods
-    const connectWebSocket = () => {
-      if (!currentUser.value) return;
-
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      // Connect directly to backend to avoid dev proxy issues
-      const backendHost = "127.0.0.1:8000";
-      const wsUrl = `${protocol}//${backendHost}/ws/${currentUser.value.id}`;
-
-      ws.value = new WebSocket(wsUrl);
-
-      ws.value.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        handleWebSocketMessage(message);
-      };
-
-      ws.value.onclose = () => {
-        // Reconnect after 3 seconds
-        setTimeout(connectWebSocket, 3000);
-      };
-    };
+    // WebSocket via composable
+    const { ws, connectWebSocket, close, sendMousePosition, setMessageHandler } = useWebSocket(currentUser);
 
     const handleWebSocketMessage = (message) => {
       switch (message.type) {
@@ -816,29 +437,8 @@ export default {
       selectedTamagotchi.value = tamagotchi;
     };
 
-    const onSpriteClick = (id, event) => {
-      const rect = gameArea.value?.getBoundingClientRect?.();
-      if (!rect) return;
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      setTargetPosition(id, { x, y });
-    };
-
-    const updateMousePosition = (event) => {
-      if (!ws.value || ws.value.readyState !== WebSocket.OPEN) return;
-
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      ws.value.send(
-        JSON.stringify({
-          type: "mouse_position",
-          x: x,
-          y: y,
-        })
-      );
-    };
+    const onSpriteClickFromChild = ({ id, x, y }) => { setTargetPosition(id, { x, y }); };
+    const onMouseMove = ({ x, y }) => { sendMousePosition(x, y); };
 
     const getOwnerName = (ownerId) => {
       const owner = allUsers.value.find((user) => user.id === ownerId);
@@ -853,47 +453,9 @@ export default {
       setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id); }, 5000);
     };
 
-    const supportTamagotchi = async (tamagotchi) => {
-      try {
-        await supportMutation({ id: tamagotchi.id });
-        pushToast(`you sent love to ${tamagotchi.name}!`, 'success');
-      } catch (e) {
-        pushToast('failed to support pet', 'error');
-      }
-    };
+    // Action functions now provided by useTamagotchiActions composable
 
-    const reviveTamagotchi = async (tamagotchi) => {
-      try {
-        const res = await reviveMutation({ id: tamagotchi.id });
-        const u = res?.data?.reviveTamagotchi;
-        if (u) {
-          allTamagotchis.value = allTamagotchis.value.map((t) => (t.id === u.id ? { ...t, ...u } : t));
-          pushToast(`you revived ${tamagotchi.name}!`, 'success');
-        } else {
-          pushToast('failed to revive pet', 'error');
-        }
-      } catch (e) {
-        pushToast('failed to revive pet', 'error');
-      }
-    };
-
-    const releaseTamagotchi = async (tamagotchi) => {
-      try {
-        const res = await releaseMutation({ id: tamagotchi.id });
-        const ok = res?.data?.releaseTamagotchi;
-        if (ok) {
-          allTamagotchis.value = allTamagotchis.value.filter((t) => t.id !== tamagotchi.id);
-          if (selectedTamagotchi.value?.id === tamagotchi.id) selectedTamagotchi.value = null;
-          pushToast(`you released ${tamagotchi.name}.`, 'info');
-        } else {
-          pushToast('failed to release pet', 'error');
-        }
-      } catch (e) {
-        pushToast('failed to release pet', 'error');
-      }
-    };
-
-    const openOnlineModal = () => {
+    const openOnlineModal = (rect) => {
       if (showOnlineModal.value) {
         showOnlineModal.value = false;
         return;
@@ -901,36 +463,58 @@ export default {
       showOnlineModal.value = true;
       const ids = onlineOthers.value.map((u) => u.id);
       if (ids.length && selectedUserIds.value.length === 0) selectedUserIds.value = ids;
-      const rect = onlineBtnRef.value?.getBoundingClientRect?.();
-      if (rect) {
-        modalStyle.value = { position: 'fixed', top: `${rect.bottom + 6}px`, left: `${rect.left}px` };
-      }
+      if (rect) { modalStyle.value = { position: 'fixed', top: `${rect.bottom + 6}px`, left: `${rect.left}px` }; }
     };
 
     // Placeholder action methods (implement with GraphQL mutations)
-    const feedTamagotchi = (tamagotchi = null) => {
-      const target = tamagotchi || selectedTamagotchi.value;
-      console.log("Feed tamagotchi:", target?.id);
-    };
+    // Centralized actions via composable
+    const { feedTamagotchi, playWithTamagotchi, sleepTamagotchi, reviveTamagotchi, releaseTamagotchi, supportTamagotchi } = useTamagotchiActions(allTamagotchis, pushToast);
 
-    const playWithTamagotchi = (tamagotchi = null) => {
-      const target = tamagotchi || selectedTamagotchi.value;
-      console.log("Play with tamagotchi:", target?.id);
+    // Difficulty control
+    const difficultyOptions = [
+      { label: 'Easy (0.5x)', value: 0.5 },
+      { label: 'Normal (1x)', value: 1.0 },
+      { label: 'Hard (1.5x)', value: 1.5 },
+      { label: 'Extreme (2x)', value: 2.0 },
+    ];
+    const selectedDifficulty = ref(1.0);
+    const initDifficulty = () => {
+      const d = Number(currentUser.value?.difficulty ?? 1.0);
+      selectedDifficulty.value = isNaN(d) ? 1.0 : d;
     };
+    watch(currentUser, () => initDifficulty(), { immediate: true });
 
-    const sleepTamagotchi = (tamagotchi = null) => {
-      const target = tamagotchi || selectedTamagotchi.value;
-      console.log("Sleep tamagotchi:", target?.id);
+    // Keep selected pet panel in sync with real-time updates
+    watch(allTamagotchis, (list) => {
+      const sel = selectedTamagotchi.value;
+      if (!sel) return;
+      const updated = list.find((t) => t.id === sel.id);
+      if (updated) selectedTamagotchi.value = updated;
+    });
+    const updateDifficulty = async () => {
+      try {
+        const res = await setDifficultyMutation({ difficulty: Number(selectedDifficulty.value) });
+        const u = res?.data?.setDifficulty;
+        if (u) {
+          currentUser.value = { ...(currentUser.value || {}), ...u };
+          pushToast('difficulty updated', 'success');
+        }
+      } catch (e) {
+        pushToast('failed to update difficulty', 'error');
+      }
     };
 
     // Initialize
     onMounted(() => {
+      // Update browser tab title
+      document.title = "🐾 Multiplayer Tamagotchi 🐾";
       const token = localStorage.getItem("token");
       const user = localStorage.getItem("user");
 
       if (token && user) {
         currentUser.value = JSON.parse(user);
         isAuthenticated.value = true;
+        setMessageHandler(handleWebSocketMessage);
         connectWebSocket();
         loadGameData();
       }
@@ -940,9 +524,7 @@ export default {
     });
 
     onUnmounted(() => {
-      if (ws.value) {
-        ws.value.close();
-      }
+      close();
       stopTracking();
       stopAutoSave();
       saveAllLocations();
@@ -974,9 +556,11 @@ export default {
       selectedUserIds,
       showDeadPets,
       showMyKnockedOut,
-      onlineBtnRef,
       openOnlineModal,
       modalStyle,
+      difficultyOptions,
+      selectedDifficulty,
+      updateDifficulty,
 
       // Game methods
       createTamagotchi,
@@ -984,8 +568,8 @@ export default {
       // Movement
       positionsById,
       setTargetPosition,
-      onSpriteClick,
-      updateMousePosition,
+      onSpriteClickFromChild,
+      onMouseMove,
       getOwnerName,
       displayStatus,
       feedTamagotchi,
@@ -994,15 +578,15 @@ export default {
       reviveTamagotchi,
       releaseTamagotchi,
       supportTamagotchi,
-      gameArea,
       toasts,
     };
   },
+  components: { AuthScreen, HeaderBar, GameArea, ControlPanel, OnlineUsersModal, ToastContainer },
 };
 </script>
 
 <style lang="scss">
-@use './styles.scss' as *;
+@use './styles/index.scss' as *;
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 9998; }
 .modal.anchored { position: fixed; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999; padding: 16px; }
 .online-modal-btn { background: #fff; border: 1px solid #ddd; color: #333; padding: 6px 10px; border-radius: 6px; }

@@ -1,0 +1,60 @@
+/* Tamagotchi list and Online users */
+.tamagotchi-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.tamagotchi-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tamagotchi-list li:last-child {
+  border-bottom: none;
+}
+
+.tamagotchi-list li.mine {
+  background: #f3f7ff;
+}
+
+.tamagotchi-list .details-btn {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.tamagotchi-list .details-btn:hover {
+  background: #f7f7f7;
+}
+
+.online-users ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.online-users li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.online-users li .cursor {
+  font-size: 14px;
+}
+
+.online-users li .status {
+  font-size: 12px;
+  color: #666;
+}

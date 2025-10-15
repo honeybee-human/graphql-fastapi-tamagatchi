@@ -64,7 +64,8 @@ class GameStorage:
             'created_at': now,
             'mouse_x': 0.0,
             'mouse_y': 0.0,
-            'is_online': False
+            'is_online': False,
+            'difficulty': 1.0  # 1.0x default deterioration rate
         }
         
         self.users[user_id] = user_data
@@ -83,6 +84,22 @@ class GameStorage:
         if user_data:
             return User(**{k: v for k, v in user_data.items() if k != 'password'})
         return None
+
+    def set_user_difficulty(self, user_id: str, difficulty: float) -> Optional[User]:
+        """Set per-user stat deterioration multiplier (clamped between 0.25 and 4)."""
+        data = self.users.get(user_id)
+        if not data:
+            return None
+        # clamp sensible bounds
+        try:
+            d = float(difficulty)
+        except Exception:
+            d = 1.0
+        d = max(0.25, min(4.0, d))
+        data['difficulty'] = d
+        self.users[user_id] = data
+        self.save_data()
+        return self.get_user(user_id)
     
     def create_tamagotchi(self, name: str, owner_id: str) -> Tamagotchi:
         tamagotchi_id = str(uuid.uuid4())
@@ -273,6 +290,142 @@ class GameStorage:
             }))
         return t
 
+    def _owner_difficulty(self, owner_id: str) -> float:
+        """Helper to fetch owner's difficulty multiplier with default 1.0."""
+        u = self.users.get(owner_id) or {}
+        try:
+            return float(u.get('difficulty', 1.0)) or 1.0
+        except Exception:
+            return 1.0
+
+    def feed_tamagotchi(self, owner_user_id: str, tamagotchi_id: str) -> Optional[Tamagotchi]:
+        data = self.tamagotchis.get(tamagotchi_id)
+        if not data:
+            return None
+        if data.get('owner_id') != owner_user_id:
+            return None
+        if not data.get('is_alive', True):
+            return None
+        # Reduce hunger, slightly improve health, update last_fed
+        data['hunger'] = max(0, data.get('hunger', 0) - 15)
+        if data.get('hunger', 0) < 80:
+            data['health'] = min(100, data.get('health', 0) + 2)
+        data['last_fed'] = datetime.now().isoformat()
+        # Re-evaluate status
+        if data['health'] <= 0:
+            data['is_alive'] = False
+            data['status'] = 'Dead'
+        elif data['hunger'] > 80:
+            data['status'] = 'Starving'
+        elif data['energy'] < 20:
+            data['status'] = 'Tired'
+        elif data['happiness'] < 30:
+            data['status'] = 'Sad'
+        else:
+            data['status'] = 'Happy'
+        self.save_data()
+        t = self._dict_to_tamagotchi(data)
+        if self.manager:
+            asyncio.create_task(self.manager.broadcast({
+                'type': 'stats_update',
+                'tamagotchi': {
+                    'id': t.id,
+                    'happiness': t.happiness,
+                    'hunger': t.hunger,
+                    'energy': t.energy,
+                    'health': t.health,
+                    'age': t.age,
+                    'status': t.status,
+                    'is_alive': t.is_alive
+                }
+            }))
+        return t
+
+    def play_tamagotchi(self, owner_user_id: str, tamagotchi_id: str) -> Optional[Tamagotchi]:
+        data = self.tamagotchis.get(tamagotchi_id)
+        if not data:
+            return None
+        if data.get('owner_id') != owner_user_id:
+            return None
+        if not data.get('is_alive', True):
+            return None
+        # Increase happiness, small energy cost, update last_played
+        data['happiness'] = min(100, data.get('happiness', 0) + 12)
+        data['energy'] = max(0, data.get('energy', 0) - 5)
+        data['last_played'] = datetime.now().isoformat()
+        # Re-evaluate status
+        if data['health'] <= 0:
+            data['is_alive'] = False
+            data['status'] = 'Dead'
+        elif data['hunger'] > 80:
+            data['status'] = 'Starving'
+        elif data['energy'] < 20:
+            data['status'] = 'Tired'
+        elif data['happiness'] < 30:
+            data['status'] = 'Sad'
+        else:
+            data['status'] = 'Happy'
+        self.save_data()
+        t = self._dict_to_tamagotchi(data)
+        if self.manager:
+            asyncio.create_task(self.manager.broadcast({
+                'type': 'stats_update',
+                'tamagotchi': {
+                    'id': t.id,
+                    'happiness': t.happiness,
+                    'hunger': t.hunger,
+                    'energy': t.energy,
+                    'health': t.health,
+                    'age': t.age,
+                    'status': t.status,
+                    'is_alive': t.is_alive
+                }
+            }))
+        return t
+
+    def sleep_tamagotchi(self, owner_user_id: str, tamagotchi_id: str) -> Optional[Tamagotchi]:
+        data = self.tamagotchis.get(tamagotchi_id)
+        if not data:
+            return None
+        if data.get('owner_id') != owner_user_id:
+            return None
+        if not data.get('is_alive', True):
+            return None
+        # Increase energy, small happiness drop if over-slept
+        data['energy'] = min(100, data.get('energy', 0) + 15)
+        if data['energy'] > 90:
+            data['happiness'] = max(0, data.get('happiness', 0) - 2)
+        data['last_slept'] = datetime.now().isoformat()
+        # Re-evaluate status
+        if data['health'] <= 0:
+            data['is_alive'] = False
+            data['status'] = 'Dead'
+        elif data['hunger'] > 80:
+            data['status'] = 'Starving'
+        elif data['energy'] < 20:
+            data['status'] = 'Tired'
+        elif data['happiness'] < 30:
+            data['status'] = 'Sad'
+        else:
+            data['status'] = 'Happy'
+        self.save_data()
+        t = self._dict_to_tamagotchi(data)
+        if self.manager:
+            asyncio.create_task(self.manager.broadcast({
+                'type': 'stats_update',
+                'tamagotchi': {
+                    'id': t.id,
+                    'happiness': t.happiness,
+                    'hunger': t.hunger,
+                    'energy': t.energy,
+                    'health': t.health,
+                    'age': t.age,
+                    'status': t.status,
+                    'is_alive': t.is_alive
+                }
+            }))
+        return t
+
     def revive_tamagotchi(self, owner_user_id: str, tamagotchi_id: str) -> Optional[Tamagotchi]:
         """Revive a knocked out pet and reset its stats to base values."""
         data = self.tamagotchis.get(tamagotchi_id)
@@ -348,23 +501,30 @@ class GameStorage:
                 last_fed = datetime.fromisoformat(data['last_fed'])
                 last_played = datetime.fromisoformat(data['last_played'])
                 last_slept = datetime.fromisoformat(data['last_slept'])
+                # Difficulty modifier from owner (>=0.25, <=4.0); higher = faster deterioration
+                diff = self._owner_difficulty(data.get('owner_id'))
+                diff = max(0.25, min(4.0, diff))
                 
                 # Update stats (faster than before - per second)
                 seconds_since_fed = (now - last_fed).total_seconds()
                 seconds_since_played = (now - last_played).total_seconds()
                 seconds_since_slept = (now - last_slept).total_seconds()
                 
-                # Increase hunger every 30 seconds
-                if seconds_since_fed > 30:
+                # Increase hunger every (30 / diff) seconds
+                if seconds_since_fed > (30 / diff):
                     data['hunger'] = min(100, data['hunger'] + 1)
-                
-                # Decrease happiness every 60 seconds
-                if seconds_since_played > 60:
+                    # reset the baseline to avoid rapid catch-up
+                    data['last_fed'] = now.isoformat()
+
+                # Decrease happiness every (60 / diff) seconds
+                if seconds_since_played > (60 / diff):
                     data['happiness'] = max(0, data['happiness'] - 1)
-                
-                # Decrease energy every 45 seconds
-                if seconds_since_slept > 45:
+                    data['last_played'] = now.isoformat()
+
+                # Decrease energy every (45 / diff) seconds
+                if seconds_since_slept > (45 / diff):
                     data['energy'] = max(0, data['energy'] - 1)
+                    data['last_slept'] = now.isoformat()
                 
                 # Update health based on other stats
                 if data['hunger'] > 80 or data['happiness'] < 20 or data['energy'] < 20:

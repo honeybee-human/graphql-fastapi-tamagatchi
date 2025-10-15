@@ -1,0 +1,86 @@
+/* Control Panel */
+.control-panel {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.create-section h3,
+.tamagotchi-details h3,
+.online-users h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.input-group input {
+  flex: 1;
+  padding: 8px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+}
+
+.input-group button {
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.input-group button:hover:not(:disabled) {
+  background: #5a6fd8;
+}
+
+.input-group button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Tamagotchi Details */
+.owner-info {
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: #666;
+}
+
+.mine-badge {
+  background: #667eea;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  margin-left: 5px;
+}
+
+.stats {
+  margin-bottom: 15px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.stat label {
+  min-width: 80px;
+  font-weight: bold;
+}
+
+.age-info {
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: #666;
+}
